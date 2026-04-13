@@ -18,6 +18,7 @@ type RunState =
   | { kind: 'error'; message: string; traceback?: string; stdout?: string }
 
 const ROUND_SECONDS = 300
+const HIDDEN_TESTS = 3
 
 export default function GamePage() {
   const [darkMode, setDarkMode] = useState(() => getStoredBoolean('silly_sort_dark', false))
@@ -32,6 +33,7 @@ export default function GamePage() {
 
   const [sort, setSort] = useState<SillySort>(() => getRandomSillySort())
   const [input, setInput] = useState<number[]>(() => generateNumbers(10))
+  const [exampleInput, setExampleInput] = useState<number[]>(() => generateNumbers(10))
   const initialInputRef = useRef<number[]>(input)
 
   const [code, setCode] = useState<string>(() => defaultStarterCode)
@@ -174,10 +176,60 @@ export default function GamePage() {
       return
     }
 
-    const ok = validateSillySort(sort, input, result.output)
     const unchanged =
       input.length === result.output.length &&
       input.every((v, i) => v === result.output[i])
+
+    const okDisplayed = validateSillySort(sort, input, result.output)
+    if (!okDisplayed) {
+      setHasSolved(false)
+      setStreak(0)
+      setFeedback({
+        kind: 'error',
+        title: 'âŒ Rule violated',
+        detail:
+          forbidUnchangedForThisInput && unchanged
+            ? `This prompt requires output to NOT equal the input. Expected output: ${sort.expectedOutput(
+                input,
+              )} | Got unchanged input.`
+            : `Expected output: ${sort.expectedOutput(input)} | Got: [${result.output.join(', ')}]`,
+      })
+      return
+    }
+
+    // Anti-cheat: verify the code works on extra unseen inputs too.
+    for (let i = 0; i < HIDDEN_TESTS; i++) {
+      const len = 6 + Math.floor(Math.random() * 7) // 6..12
+      let hiddenInput = generateNumbers(len)
+      if (hiddenInput.length === input.length && hiddenInput.every((v, idx) => v === input[idx])) {
+        hiddenInput = generateNumbers(len)
+      }
+      const hidden = await runSillySort({ code, input: hiddenInput, timeoutMs: 800 })
+      if (!hidden.ok) {
+        setHasSolved(false)
+        setStreak(0)
+        setFeedback({
+          kind: 'error',
+          title: '❌ Failed hidden tests',
+          detail: `Your code errored on a hidden input. (${hidden.error})`,
+        })
+        return
+      }
+      const hiddenOk = validateSillySort(sort, hiddenInput, hidden.output)
+      if (!hiddenOk) {
+        setHasSolved(false)
+        setStreak(0)
+        setFeedback({
+          kind: 'error',
+          title: '❌ Failed hidden tests',
+          detail:
+            'Your solution passed the displayed input check, but failed on a hidden input. Avoid hardcoding values and follow the rule in general.',
+        })
+        return
+      }
+    }
+
+    const ok = validateSillySort(sort, input, result.output)
     if (ok) {
       setHasSolved(true)
       setScore((s) => s + 1 * multiplier)
@@ -226,6 +278,7 @@ export default function GamePage() {
     setSort(getRandomSillySort())
     setInput(next)
     initialInputRef.current = next
+    setExampleInput(generateNumbers(10))
     setCode(defaultStarterCode)
     setRunState({ kind: 'idle' })
     setFeedback(null)
@@ -356,14 +409,14 @@ export default function GamePage() {
                   </div>
                   <div className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{sort.description}</div>
                   <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    An Example of an Expected output
+                    Example:
                   </div>
                   <pre className="mt-1 overflow-auto rounded-lg border border-zinc-200/70 bg-white/60 px-3 py-2 text-xs text-zinc-800 shadow-sm backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:text-zinc-200">
-                    {sort.expectedOutput(input)}
+                    Input: [{exampleInput.join(', ')}]{'\n'}Output: {sort.expectedOutput(exampleInput)}
                   </pre>
                   {forbidUnchangedForThisInput ? (
                     <div className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
-                      Rule twist: output must not be identical to the input.
+                      Output must not be identical to the input
                     </div>
                   ) : null}
                 </div>
@@ -404,6 +457,7 @@ export default function GamePage() {
               <ul className="mt-1 list-disc space-y-1 pl-5">
                 <li>Runs in your browser using Pyodide (no server). Timeout: ~0.8s.</li>
                 <li>Imports are disabled; use plain Python and return a list.</li>
+                <li>Submissions are checked against a few hidden inputs to discourage hardcoding.</li>
                 <li>
                   Mutating <code className="text-zinc-900 dark:text-zinc-100">arr</code> in place is best — we try to
                   record steps.
