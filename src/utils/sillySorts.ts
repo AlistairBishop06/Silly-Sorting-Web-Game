@@ -200,7 +200,7 @@ export const SILLY_SORTS: SillySort[] = [
     description:
       'Traverse left to right and remove any element that is smaller than the previous kept element.',
     cannotBeInput: (input) => !isSortedAsc(input),
-    validator: (input, output) => {
+    validator: (_input, output) => {
       let last = -Infinity
       for (const v of output) {
         if (v < last) return false
@@ -349,7 +349,7 @@ export const SILLY_SORTS: SillySort[] = [
       }
       return inv > 0
     },
-    validator: (input, output) => {
+    validator: (_input, output) => {
       let inv = 0
       for (let i = 0; i < output.length; i++) {
         for (let j = i + 1; j < output.length; j++) {
@@ -528,9 +528,8 @@ export const SILLY_SORTS: SillySort[] = [
       const idx = input.indexOf(mx)
       return formatArray([...input.slice(0, idx), ...input.slice(idx + 1)])
     },
-    
   },
-  
+
   {
     name: 'Tidal Sort',
     description: 'Reorder by alternately picking the current minimum then maximum from remaining elements.',
@@ -583,18 +582,12 @@ export const SILLY_SORTS: SillySort[] = [
     cannotBeInput: (input) => {
       const asc = [...input].sort((a, b) => a - b)
       const desc = [...input].sort((a, b) => b - a)
-      const expected = input.map((_, i) => (i % 2 === 0 ? asc[i >> 1] : desc[i >> 1]))
-      // actually interleave: position 0 from asc[0], position 1 from desc[0], etc.
       const result: number[] = []
       for (let i = 0; i < input.length; i++)
         result.push(i % 2 === 0 ? asc[Math.floor(i / 2)] : desc[Math.floor(i / 2)])
       return !isSameArray(input, result)
     },
     validator: (_input, output) => {
-      const asc = [...output].sort((a, b) => a - b)
-      const desc = [...output].sort((a, b) => b - a)
-      // Reconstruct what the clown output should look like given these elements
-      // It's valid if output[i] matches the pattern
       const evens = output.filter((_, i) => i % 2 === 0)
       const odds = output.filter((_, i) => i % 2 !== 0)
       return isSortedAsc(evens) && isSortedAsc([...odds].reverse())
@@ -943,7 +936,7 @@ export const SILLY_SORTS: SillySort[] = [
     validator: (input, output) => {
       if (input.length === 0) return output.length === 0
       if (output.length !== input.length * 2 - 1) return false
-      return input.every((v, i) => output[i * 2] === v) && 
+      return input.every((v, i) => output[i * 2] === v) &&
              output.filter((_, i) => i % 2 !== 1000).every(v => v === 1000)
     },
     expectedOutput: (input) => {
