@@ -16,7 +16,7 @@ type RunState =
   | { kind: 'done'; output: number[]; steps: number[][]; stdout: string }
   | { kind: 'error'; message: string; traceback?: string; stdout?: string }
 
-const ROUND_SECONDS = 60
+const ROUND_SECONDS = 300
 
 export default function GamePage() {
   const [darkMode, setDarkMode] = useState(() => getStoredBoolean('silly_sort_dark', false))

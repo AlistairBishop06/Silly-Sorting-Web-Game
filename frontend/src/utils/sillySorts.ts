@@ -133,6 +133,176 @@ export const SILLY_SORTS: SillySort[] = [
       return isSameArray([...evens, ...odds], output)
     },
   },
+
+  // =========================
+  // NEW SILLY SORTS ADDED
+  // =========================
+
+  {
+    name: 'Stalin Sort',
+    description: 'Eliminate any element that breaks ascending order. No mercy.',
+    validator: (input, output) => {
+      if (output.length === 0) return input.length === 0
+      let last = -Infinity
+      for (const v of output) {
+        if (v < last) return false
+        last = v
+      }
+      return true
+    },
+  },
+  {
+    name: 'Main Character Sort',
+    description: 'One number becomes the protagonist; everyone else copies them.',
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      const candidates = new Set(input)
+      for (const c of candidates) {
+        if (output.every((v) => v === c)) return true
+      }
+      return false
+    },
+  },
+  {
+    name: 'Gaslight Sort',
+    description: 'The list is already sorted. Trust me.',
+    validator: (_input, _output) => true,
+  },
+  {
+    name: 'Therapy Sort',
+    description: 'Every number slowly moves toward the average.',
+    validator: (input, output) => {
+      const avg = average(input)
+      const tol = 1e-6
+      return (
+        input.length === output.length &&
+        output.every((v, i) => Math.abs(v - avg) <= Math.abs(input[i] - avg) + tol)
+      )
+    },
+  },
+  {
+    name: 'Lottery Sort',
+    description: 'Completely random redistribution of values.',
+    validator: (input, output) => {
+      return input.length === output.length && !isSameArray(input, output)
+    },
+  },
+  {
+    name: 'Narcissist Sort',
+    description: 'Everything becomes the maximum value because it deserves it.',
+    validator: (input, output) => {
+      const mx = Math.max(...input)
+      return output.length === input.length && output.every((v) => v === mx)
+    },
+  },
+  {
+    name: 'Introvert Sort',
+    description: 'Only local neighbour interactions are allowed.',
+    validator: (_input, output) => {
+      return output.length > 0 && output.length === [...output].length
+    },
+  },
+  {
+    name: 'Extrovert Sort',
+    description: 'Every element interacts with every other element at least once.',
+    validator: (input, output) => {
+      return multisetEqual(input, output) && !isSameArray(input, output)
+    },
+  },
+  {
+    name: 'Overthinking Sort',
+    description: 'Try sorting but second guess every decision.',
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+
+      let inversions = 0
+      for (let i = 0; i < output.length; i++) {
+        for (let j = i + 1; j < output.length; j++) {
+          if (output[i] > output[j]) inversions++
+        }
+      }
+
+      return inversions <= 3
+    },
+  },
+  {
+    name: 'Procrastination Sort',
+    description: 'Delay sorting until the last possible moment.',
+    validator: (input, output) => {
+      return isSameArray([...input.slice(1), input[0]], output)
+    },
+  },
+  {
+    name: 'Existential Sort',
+    description: 'Nothing matters anymore, everything becomes zero.',
+    validator: (_input, output) => {
+      return output.every((v) => v === 0)
+    },
+  },
+  {
+    name: 'Influencer Sort',
+    description: 'The first element sets the trend; everyone follows it.',
+    validator: (input, output) => {
+      return output.every((v) => v === input[0])
+    },
+  },
+  {
+    name: 'Middle Child Sort',
+    description: 'Only the middle values get attention.',
+    validator: (input, output) => {
+      const sorted = [...input].sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      return output[mid] === sorted[mid]
+    },
+  },
+  {
+    name: 'Drama Sort',
+    description: 'The largest and smallest values swap repeatedly for attention.',
+    validator: (input, output) => {
+      return multisetEqual(input, output)
+    },
+  },
+  {
+    name: 'Commitment Issues Sort',
+    description: 'Starts sorting but gives up halfway.',
+    validator: (input, output) => {
+      const half = Math.floor(input.length / 2)
+      return isSortedAsc(output.slice(0, half))
+    },
+  },
+  {
+    name: 'Impostor Sort',
+    description: 'Something suspicious has been added to the array.',
+    validator: (input, output) => {
+      return output.length === input.length + 1
+    },
+  },
+  {
+    name: 'Time Loop Sort',
+    description: 'Everything resets to the original state.',
+    validator: (input, output) => isSameArray(input, output),
+  },
+  {
+    name: 'Pyramid Scheme Sort',
+    description: 'Values climb towards the biggest number.',
+    validator: (input, output) => {
+      const mx = Math.max(...input)
+      return output.some((v) => v === mx)
+    },
+  },
+  {
+    name: 'Sleep Sort (Cursed)',
+    description: 'Smaller numbers wake up first somehow.',
+    validator: (_input, output) => isSortedAsc(output),
+  },
+  {
+    name: 'Vibe Check Sort',
+    description: 'Only keep the numbers that pass the vibe check.',
+    validator: (input, output) => {
+      const avg = average(input)
+      return output.every((v) => v >= avg)
+    },
+  },
 ]
 
 export function getRandomSillySort(): SillySort {
