@@ -36,9 +36,11 @@ function reconcileBars(prev: Bar[], nextValues: number[]): Bar[] {
 export default function BarChart({
   values,
   highlightIndices,
+  className,
 }: {
   values: number[]
   highlightIndices?: number[]
+  className?: string
 }) {
   const [bars, setBars] = useState<Bar[]>(() =>
     values.map((v) => ({ id: randomId(), value: v })),
@@ -92,8 +94,13 @@ export default function BarChart({
   const highlight = new Set(highlightIndices ?? [])
 
   return (
-    <div className="h-64 w-full rounded-2xl border border-zinc-200/70 bg-white/55 p-4 shadow-lg shadow-violet-500/5 backdrop-blur-md dark:border-zinc-800/70 dark:bg-zinc-950/35 dark:shadow-violet-500/10">
-      <div className="flex h-full items-end gap-2">
+    <div
+      className={clsx(
+        'flex h-full min-h-[12rem] w-full flex-col rounded-2xl border border-white/25 bg-gradient-to-b from-white/55 to-violet-50/30 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-md dark:border-white/10 dark:from-zinc-900/70 dark:to-violet-950/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+        className,
+      )}
+    >
+      <div className="flex min-h-0 flex-1 items-end gap-1.5 px-0.5 sm:gap-2">
         {bars.map((bar, idx) => {
           const safeValue = Number.isFinite(bar.value) ? bar.value : 0
           const pct = clamp(safeValue / maxValue, 0, 1)
@@ -102,25 +109,25 @@ export default function BarChart({
           const isHot = highlight.has(idx)
 
           return (
-            <div key={bar.id} className="flex h-full flex-1 items-end">
-              <div className="flex h-full w-full flex-col">
-                <div className="flex flex-1 items-end">
+            <div key={bar.id} className="flex h-full min-w-0 flex-1 items-end">
+              <div className="flex h-full w-full min-w-0 flex-col">
+                <div className="flex min-h-0 flex-1 items-end">
                   <div
                     ref={(el) => {
                       if (!el) refs.current.delete(bar.id)
                       else refs.current.set(bar.id, el)
                     }}
-                  style={style}
-                  className={clsx(
-                    'w-full rounded-lg transition-[height,filter] duration-300 ease-in-out will-change-[height,transform] shadow-sm',
-                    isHot
-                      ? 'bg-gradient-to-t from-amber-400 via-orange-400 to-rose-400 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300'
-                      : 'bg-gradient-to-t from-violet-600 via-fuchsia-500 to-cyan-400 dark:from-violet-500 dark:via-fuchsia-400 dark:to-cyan-300',
-                  )}
-                  title={String(safeValue)}
-                />
+                    style={style}
+                    className={clsx(
+                      'w-full rounded-xl transition-[height,filter,box-shadow] duration-300 ease-out will-change-[height,transform]',
+                      isHot
+                        ? 'bg-gradient-to-t from-amber-400 via-orange-400 to-rose-300 shadow-[0_0_24px_-4px_rgba(251,146,60,0.8)] ring-2 ring-amber-300/50 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300 dark:shadow-[0_0_28px_-4px_rgba(251,191,36,0.45)]'
+                        : 'bg-gradient-to-t from-violet-600 via-fuchsia-500 to-cyan-400 shadow-[0_8px_24px_-8px_rgba(124,58,237,0.55)] dark:from-violet-500 dark:via-fuchsia-400 dark:to-cyan-300 dark:shadow-[0_8px_28px_-8px_rgba(168,85,247,0.4)]',
+                    )}
+                    title={String(safeValue)}
+                  />
                 </div>
-                <div className="mt-2 select-none text-center text-sm font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">
+                <div className="mt-2 select-none text-center text-[11px] font-bold tabular-nums text-zinc-600 dark:text-zinc-300 sm:text-xs">
                   {Math.round(safeValue * 100) / 100}
                 </div>
               </div>

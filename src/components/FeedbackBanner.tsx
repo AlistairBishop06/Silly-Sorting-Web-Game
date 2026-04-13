@@ -19,7 +19,7 @@ export default function FeedbackBanner({
   return (
     <div
       className={clsx(
-        'shadow-pop rounded-2xl border p-3 text-sm backdrop-blur-md',
+        'shadow-pop rounded-3xl border p-4 text-sm backdrop-blur-xl',
         kind === 'success'
           ? 'border-l-4 border-l-emerald-400'
           : kind === 'error'

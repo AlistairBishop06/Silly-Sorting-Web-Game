@@ -4,10 +4,6 @@
 
 @layer base {
   :root {
-    color-scheme: light;
-  }
-
-  .dark {
     color-scheme: dark;
   }
 
@@ -18,25 +14,15 @@
   }
 
   body {
-    @apply bg-zinc-50 text-zinc-900 antialiased;
-    @apply transition-colors duration-300;
+    @apply bg-zinc-950 text-zinc-100 antialiased;
     position: relative;
     overflow-x: hidden;
     font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
     background-image:
-      radial-gradient(900px 600px at 10% 10%, rgba(168, 85, 247, 0.16), transparent 60%),
-      radial-gradient(900px 600px at 90% 20%, rgba(236, 72, 153, 0.12), transparent 55%),
-      radial-gradient(900px 600px at 50% 90%, rgba(34, 211, 238, 0.10), transparent 60%),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(250, 250, 250, 1));
-  }
-
-  .dark body {
-    @apply bg-zinc-950 text-zinc-100;
-    background-image:
       radial-gradient(900px 600px at 10% 10%, rgba(168, 85, 247, 0.18), transparent 60%),
       radial-gradient(900px 600px at 90% 20%, rgba(236, 72, 153, 0.14), transparent 55%),
-      radial-gradient(900px 600px at 50% 90%, rgba(34, 211, 238, 0.10), transparent 60%),
+      radial-gradient(900px 600px at 50% 90%, rgba(34, 211, 238, 0.1), transparent 60%),
       linear-gradient(to bottom, rgba(9, 9, 11, 0.9), rgba(9, 9, 11, 1));
   }
 
@@ -79,6 +65,73 @@
   }
 }
 
+.start-arcade {
+  font-family: 'Press Start 2P', ui-monospace, monospace;
+  letter-spacing: 0.04em;
+}
+
+@keyframes startPulseGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.08),
+      0 12px 40px rgba(245, 158, 11, 0.45),
+      0 0 28px rgba(250, 204, 21, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.08),
+      0 14px 48px rgba(245, 158, 11, 0.6),
+      0 0 40px rgba(250, 204, 21, 0.55);
+  }
+}
+
+.start-pulse {
+  animation: startPulseGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes bossMeterPulse {
+  0%,
+  100% {
+    opacity: 0.07;
+  }
+  50% {
+    opacity: 0.14;
+  }
+}
+
+.boss-meter-pulse {
+  animation: bossMeterPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes bossBorderPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(244, 63, 94, 0.25),
+      0 0 40px -10px rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(244, 63, 94, 0.45),
+      0 0 56px -8px rgba(244, 63, 94, 0.5);
+  }
+}
+
+.boss-arena-glow {
+  animation: bossBorderPulse 2.8s ease-in-out infinite;
+}
+
+.boss-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(244, 63, 94, 0.04) 3px,
+    rgba(244, 63, 94, 0.04) 6px
+  );
+}
+
 @keyframes confettiFall {
   0% {
     transform: translate3d(0, -40px, 0) rotate(0deg);
@@ -95,28 +148,23 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-zinc-200/70 bg-white/70 shadow-lg shadow-violet-500/5 backdrop-blur-md;
-    @apply dark:border-zinc-800/70 dark:bg-zinc-950/45 dark:shadow-violet-500/10;
+    @apply rounded-2xl border border-zinc-800/70 bg-zinc-950/45 shadow-lg shadow-violet-500/10 backdrop-blur-md;
   }
 
   .card-soft {
-    @apply rounded-xl border border-zinc-200/70 bg-white/60 shadow-sm backdrop-blur;
-    @apply dark:border-zinc-800/70 dark:bg-zinc-950/35;
+    @apply rounded-xl border border-zinc-800/70 bg-zinc-950/35 shadow-sm backdrop-blur;
   }
 
   .pill {
-    @apply rounded-xl border border-zinc-200/70 bg-white/70 px-3 py-2 text-xs text-zinc-700 shadow-sm backdrop-blur;
-    @apply dark:border-zinc-800/70 dark:bg-zinc-950/45 dark:text-zinc-300;
+    @apply rounded-xl border border-zinc-800/70 bg-zinc-950/45 px-3 py-2 text-xs text-zinc-300 shadow-sm backdrop-blur;
   }
 
   .title-gradient {
-    @apply bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 bg-clip-text text-transparent;
-    @apply dark:from-violet-400 dark:via-fuchsia-400 dark:to-cyan-300;
+    @apply bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent;
   }
 
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50;
-    @apply dark:focus-visible:ring-offset-zinc-950;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950;
   }
 }
 
@@ -157,5 +205,12 @@
   }
   .confetti-piece {
     display: none !important;
+  }
+  .start-pulse {
+    animation: none !important;
+  }
+  .boss-meter-pulse,
+  .boss-arena-glow {
+    animation: none !important;
   }
 }

@@ -13,9 +13,9 @@ const variants: Record<NonNullable<Props['variant']>, string> = {
   primary:
     'shadow-pop bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 text-white hover:brightness-110',
   secondary:
-    'bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white',
+    'bg-zinc-100 text-zinc-900 shadow-sm hover:bg-white hover:shadow-md',
   ghost:
-    'bg-white/40 text-zinc-900 shadow-sm hover:bg-white/70 hover:shadow-md dark:bg-zinc-950/30 dark:text-zinc-100 dark:hover:bg-zinc-950/60 dark:hover:shadow-zinc-950/30',
+    'bg-zinc-950/30 text-zinc-100 shadow-sm hover:bg-zinc-950/60 hover:shadow-md hover:shadow-zinc-950/30',
   danger:
     'bg-gradient-to-r from-rose-600 to-orange-500 text-white shadow-pop hover:brightness-110',
 }

@@ -7,6 +7,8 @@ export type SillySort = {
   // When true, returning the input unchanged does NOT count as a solution.
   // When a function, it can decide per-input (so we don't reject "already satisfies the rule" edge cases).
   cannotBeInput?: boolean | ((input: number[]) => boolean)
+  /** Set for boss-tier challenges (harder rules). */
+  isBoss?: boolean
 }
 
 function isSameArray(a: number[], b: number[]) {
@@ -45,6 +47,17 @@ function formatNumber(n: number) {
 
 function formatArray(arr: number[]) {
   return `[${arr.map(formatNumber).join(', ')}]`
+}
+
+/** Stable ascending rank: smallest value → 0; ties break by earlier index. */
+function stableRanks(input: number[]): number[] {
+  const indexed = input.map((v, i) => ({ v, i }))
+  indexed.sort((a, b) => a.v - b.v || a.i - b.i)
+  const ranks = new Array<number>(input.length)
+  indexed.forEach((item, r) => {
+    ranks[item.i] = r
+  })
+  return ranks
 }
 
 function median(arr: number[]) {
@@ -1008,6 +1021,268 @@ export const SILLY_SORTS: SillySort[] = [
   }
 
 ]
+
+/** Boss stages use multiples of this (8, 16, 24, …). */
+export const BOSS_LEVEL_EVERY = 8
+
+export function isBossStageLevel(level: number, every: number = BOSS_LEVEL_EVERY): boolean {
+  return level > 0 && level % every === 0
+}
+
+/**
+ * Ten deliberately harder rules. Validators mirror the spec; hidden tests reuse the same `validator`.
+ */
+export const BOSS_SORTS: SillySort[] = [
+  {
+    name: 'XOR Cascade Sort',
+    isBoss: true,
+    description:
+      'Each position i must equal the bitwise XOR of all input elements from index 0 through i (inclusive). Integers only; use int() when XOR-ing.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      let acc = 0
+      for (let i = 0; i < input.length; i++) {
+        acc ^= Math.trunc(input[i])
+        if (Math.abs(output[i] - acc) > 1e-6) return false
+      }
+      return true
+    },
+    expectedOutput: (input) => {
+      let acc = 0
+      return formatArray(
+        input.map((v) => {
+          acc ^= Math.trunc(v)
+          return acc
+        }),
+      )
+    },
+  },
+
+  {
+    name: 'Rank & File Sort',
+    isBoss: true,
+    description:
+      'Replace every element with its stable rank in ascending order: smallest value → 0, next → 1, … Ties: the value that appeared earlier in the input gets the smaller rank.',
+    cannotBeInput: (input) => !isSameArray(input, stableRanks(input)),
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      const expected = stableRanks(input)
+      return expected.every((r, i) => Math.abs(output[i] - r) < 1e-6)
+    },
+    expectedOutput: (input) => formatArray(stableRanks(input)),
+  },
+
+  {
+    name: 'Parity Parade Sort',
+    isBoss: true,
+    description:
+      'Reorder the array: every element that sits at an even index in the input (0, 2, 4, …) first, preserving their relative order, followed by every element from odd indices (1, 3, 5, …), preserving their order.',
+    cannotBeInput: (input) => {
+      const evens = input.filter((_, i) => i % 2 === 0)
+      const odds = input.filter((_, i) => i % 2 !== 0)
+      return !isSameArray(input, [...evens, ...odds])
+    },
+    validator: (input, output) => {
+      const evens = input.filter((_, i) => i % 2 === 0)
+      const odds = input.filter((_, i) => i % 2 !== 0)
+      return isSameArray([...evens, ...odds], output)
+    },
+    expectedOutput: (input) => {
+      const evens = input.filter((_, i) => i % 2 === 0)
+      const odds = input.filter((_, i) => i % 2 !== 0)
+      return formatArray([...evens, ...odds])
+    },
+  },
+
+  {
+    name: 'Tricycle Flip Sort',
+    isBoss: true,
+    description:
+      'Split the array into consecutive chunks of length 3 (the last chunk may be shorter). Reverse each chunk in place, then concatenate.',
+    cannotBeInput: (input) => {
+      const expected: number[] = []
+      for (let i = 0; i < input.length; i += 3) {
+        expected.push(...input.slice(i, i + 3).reverse())
+      }
+      return !isSameArray(input, expected)
+    },
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      const expected: number[] = []
+      for (let i = 0; i < input.length; i += 3) {
+        expected.push(...input.slice(i, i + 3).reverse())
+      }
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => {
+      const out: number[] = []
+      for (let i = 0; i < input.length; i += 3) {
+        out.push(...input.slice(i, i + 3).reverse())
+      }
+      return formatArray(out)
+    },
+  },
+
+  {
+    name: 'King of the Hill Sort',
+    isBoss: true,
+    description:
+      'Running maximum: output[i] must equal the largest value among input[0] through input[i] (inclusive).',
+    cannotBeInput: (input) => {
+      let m = -Infinity
+      return input.some((v) => {
+        m = Math.max(m, v)
+        return v !== m
+      })
+    },
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      let m = -Infinity
+      for (let i = 0; i < input.length; i++) {
+        m = Math.max(m, input[i])
+        if (Math.abs(output[i] - m) > 1e-6) return false
+      }
+      return true
+    },
+    expectedOutput: (input) => {
+      let m = -Infinity
+      return formatArray(
+        input.map((v) => {
+          m = Math.max(m, v)
+          return m
+        }),
+      )
+    },
+  },
+
+  {
+    name: 'Palindrome Meet Sort',
+    isBoss: true,
+    description:
+      'Each output[i] must be the arithmetic mean of input[i] and input[n - 1 - i] where n is the length.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      const n = input.length
+      return input.every((v, i) => Math.abs(output[i] - (v + input[n - 1 - i]) / 2) < 1e-6)
+    },
+    expectedOutput: (input) => {
+      const n = input.length
+      return formatArray(input.map((v, i) => (v + input[n - 1 - i]) / 2))
+    },
+  },
+
+  {
+    name: 'Tertile Exodus Sort',
+    isBoss: true,
+    description:
+      'Stable three-way partition: all values strictly less than 34 first (original order), then values from 34 through 67 inclusive, then values strictly greater than 67.',
+    cannotBeInput: (input) => {
+      const low = input.filter((v) => v < 34)
+      const mid = input.filter((v) => v >= 34 && v <= 67)
+      const hi = input.filter((v) => v > 67)
+      return !isSameArray(input, [...low, ...mid, ...hi])
+    },
+    validator: (input, output) => {
+      const low = input.filter((v) => v < 34)
+      const mid = input.filter((v) => v >= 34 && v <= 67)
+      const hi = input.filter((v) => v > 67)
+      return isSameArray([...low, ...mid, ...hi], output)
+    },
+    expectedOutput: (input) => {
+      const low = input.filter((v) => v < 34)
+      const mid = input.filter((v) => v >= 34 && v <= 67)
+      const hi = input.filter((v) => v > 67)
+      return formatArray([...low, ...mid, ...hi])
+    },
+  },
+
+  {
+    name: 'Weave Stripe Sort',
+    isBoss: true,
+    description:
+      'Leave positions fixed: values at even indices (0,2,4,…) are replaced by the even-index values from the input, sorted ascending. Values at odd indices are replaced by the odd-index values from the input, sorted ascending.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b)
+      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b)
+      let ei = 0
+      let oi = 0
+      for (let i = 0; i < input.length; i++) {
+        const want = i % 2 === 0 ? evens[ei++] : odds[oi++]
+        if (Math.abs(output[i] - want) > 1e-6) return false
+      }
+      return true
+    },
+    expectedOutput: (input) => {
+      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b)
+      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b)
+      let ei = 0
+      let oi = 0
+      return formatArray(
+        input.map((_, i) => (i % 2 === 0 ? evens[ei++] : odds[oi++])),
+      )
+    },
+  },
+
+  {
+    name: 'Ouroboros Product Sort',
+    isBoss: true,
+    description:
+      'Cyclic adjacent product: output[i] = input[i] × input[(i + 1) mod n], where n is the length (so the last position multiplies the last element by the first).',
+    cannotBeInput: (input) => input.length >= 2,
+    validator: (input, output) => {
+      if (input.length !== output.length || input.length === 0) return false
+      const n = input.length
+      return input.every((v, i) => Math.abs(output[i] - v * input[(i + 1) % n]) < 1e-6)
+    },
+    expectedOutput: (input) => {
+      const n = input.length
+      if (n === 0) return '[]'
+      return formatArray(input.map((v, i) => v * input[(i + 1) % n]))
+    },
+  },
+
+  {
+    name: 'Buddy System Sort',
+    isBoss: true,
+    description:
+      'Split into consecutive pairs (0–1), (2–3), … If length is odd, the last element stays at the end after sorting the pairs. Sort pairs in ascending lexicographic order (first element, then second), then flatten.',
+    cannotBeInput: (input) => input.length >= 2,
+    validator: (input, output) => {
+      if (input.length !== output.length) return false
+      if (!multisetEqual(input, output)) return false
+      const n = input.length
+      const pairCount = Math.floor(n / 2)
+      const pairs: [number, number][] = []
+      for (let i = 0; i < pairCount; i++) pairs.push([input[i * 2], input[i * 2 + 1]])
+      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      const expected = pairs.flat()
+      if (n % 2 === 1) expected.push(input[n - 1])
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => {
+      const n = input.length
+      const pairCount = Math.floor(n / 2)
+      const pairs: [number, number][] = []
+      for (let i = 0; i < pairCount; i++) pairs.push([input[i * 2], input[i * 2 + 1]])
+      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      const flat = pairs.flat()
+      if (n % 2 === 1) flat.push(input[n - 1])
+      return formatArray(flat)
+    },
+  },
+]
+
+export function getRandomBossSort(): SillySort {
+  return BOSS_SORTS[Math.floor(Math.random() * BOSS_SORTS.length)]
+}
+
+export function pickSortForStage(level: number): SillySort {
+  return isBossStageLevel(level) ? getRandomBossSort() : getRandomSillySort()
+}
 
 export function getRandomSillySort(): SillySort {
   return SILLY_SORTS[Math.floor(Math.random() * SILLY_SORTS.length)]
