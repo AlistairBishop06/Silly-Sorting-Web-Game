@@ -598,19 +598,6 @@ export default function GamePage() {
             </div>
           </div>
 
-          <details className="shrink-0 rounded-2xl border border-zinc-200/70 bg-white/40 text-xs text-zinc-600 backdrop-blur-md open:bg-white/60 dark:border-zinc-700/70 dark:bg-zinc-950/40 dark:text-zinc-400 dark:open:bg-zinc-950/55">
-            <summary className="cursor-pointer select-none px-4 py-3 font-bold text-zinc-800 dark:text-zinc-200">
-              How it runs
-            </summary>
-            <ul className="space-y-2 border-t border-zinc-200/60 px-4 py-3 dark:border-zinc-700/60">
-              <li>Pyodide in-browser · ~0.8s timeout · no imports</li>
-              <li>Hidden checks on random inputs · don&apos;t hardcode</li>
-              <li>
-                Mutate <code className="text-zinc-900 dark:text-zinc-100">arr</code> in place for smoother
-                animations
-              </li>
-            </ul>
-          </details>
         </section>
         </div>
 
@@ -628,10 +615,6 @@ export default function GamePage() {
             </p>
           </div>
         ) : null}
-
-        <p className="w-full shrink-0 text-center text-[11px] text-zinc-500 dark:text-zinc-500">
-          Debug tip: <code className="text-zinc-700 dark:text-zinc-300">print(arr)</code> — then delete it for main-character energy.
-        </p>
       </main>
 
       {gameStarted ? (

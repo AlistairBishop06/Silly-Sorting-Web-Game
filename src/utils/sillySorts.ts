@@ -49,17 +49,6 @@ function formatArray(arr: number[]) {
   return `[${arr.map(formatNumber).join(', ')}]`
 }
 
-/** Stable ascending rank: smallest value → 0; ties break by earlier index. */
-function stableRanks(input: number[]): number[] {
-  const indexed = input.map((v, i) => ({ v, i }))
-  indexed.sort((a, b) => a.v - b.v || a.i - b.i)
-  const ranks = new Array<number>(input.length)
-  indexed.forEach((item, r) => {
-    ranks[item.i] = r
-  })
-  return ranks
-}
-
 function median(arr: number[]) {
   if (arr.length === 0) return 0
   const sorted = [...arr].sort((a, b) => a - b)
@@ -1018,8 +1007,61 @@ export const SILLY_SORTS: SillySort[] = [
     validator: (input, output) =>
       input.every((v, i) => Math.abs(output[i] - (v + 1.5)) < 1e-6),
     expectedOutput: (input) => formatArray(input.map((v) => v + 1.5)),
-  }
+  },
 
+  {
+    name: 'Dementia Sort',
+    description: 'You start the array fine, but halfway through you forget what you were doing. The second half of the array must be all zeros.',
+    cannotBeInput: (input) => input.slice(Math.floor(input.length / 2)).some(v => v !== 0),
+    validator: (input, output) => {
+      const half = Math.floor(input.length / 2);
+      const firstHalfMatch = isSameArray(input.slice(0, half), output.slice(0, half));
+      const secondHalfZero = output.slice(half).every(v => v === 0);
+      return firstHalfMatch && secondHalfZero && input.length === output.length;
+    },
+    expectedOutput: (input) => {
+      const half = Math.floor(input.length / 2);
+      const res = [...input.slice(0, half), ...new Array(input.length - half).fill(0)];
+      return formatArray(res);
+    },
+  },
+
+  {
+    name: 'Podium Sort',
+    description: 'Racing logic. Sort descending, but the top three values must be within 1 unit of each other to simulate a close finish.',
+    cannotBeInput: true,
+    validator: (_input, output) => {
+      if (!isSameArray([...output].sort((a, b) => b - a), output)) return false;
+      if (output.length < 3) return true;
+      return (output[0] - output[1] <= 1) && (output[1] - output[2] <= 1);
+    },
+    expectedOutput: (input) => {
+      const sorted = [...input].sort((a, b) => b - a);
+      if (sorted.length >= 2) sorted[1] = sorted[0] - 0.1;
+      if (sorted.length >= 3) sorted[2] = sorted[0] - 0.2;
+      return formatArray(sorted);
+    },
+  }, 
+
+  {
+    name: 'McDonalds Sort',
+    description: 'Nobody is allowed to be paid higher than £15. Anything above 15 is capped at 15.',
+    cannotBeInput: (input) => input.some(v => v > 15),
+    validator: (input, output) => {
+      return input.every((v, i) => output[i] === (v > 15 ? 15 : v));
+    },
+    expectedOutput: (input) => formatArray(input.map(v => (v > 15 ? 15 : v))),
+  },
+
+  {
+    name: 'Deepfake Sort',
+    description: 'Pretending to be something else. Every number is replaced by the nearest multiple of 10. It looks like the same data, but it’s just a facade.',
+    cannotBeInput: (input) => input.some(v => v % 10 !== 0),
+    validator: (input, output) => {
+      return input.every((v, i) => output[i] === Math.round(v / 10) * 10);
+    },
+    expectedOutput: (input) => formatArray(input.map(v => Math.round(v / 10) * 10)),
+  },
 ]
 
 /** Boss stages use multiples of this (8, 16, 24, …). */
@@ -1034,247 +1076,218 @@ export function isBossStageLevel(level: number, every: number = BOSS_LEVEL_EVERY
  */
 export const BOSS_SORTS: SillySort[] = [
   {
-    name: 'XOR Cascade Sort',
+    name: 'Reply All Disaster',
     isBoss: true,
     description:
-      'Each position i must equal the bitwise XOR of all input elements from index 0 through i (inclusive). Integers only; use int() when XOR-ing.',
+      'Like an email thread that won\'t die, each person carries the weight of everyone before them. Each position i must be the bitwise XOR sum of all elements from 0 to i.',
     cannotBeInput: true,
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      let acc = 0
-      for (let i = 0; i < input.length; i++) {
-        acc ^= Math.trunc(input[i])
-        if (Math.abs(output[i] - acc) > 1e-6) return false
-      }
-      return true
+      let acc = 0;
+      return input.every((v, i) => {
+        acc ^= Math.trunc(v);
+        return Math.abs(output[i] - acc) < 1e-6;
+      });
     },
     expectedOutput: (input) => {
-      let acc = 0
-      return formatArray(
-        input.map((v) => {
-          acc ^= Math.trunc(v)
-          return acc
-        }),
-      )
+      let acc = 0;
+      return formatArray(input.map((v) => (acc ^= Math.trunc(v))));
     },
   },
 
   {
-    name: 'Rank & File Sort',
+    name: 'High School Popularity Contest',
     isBoss: true,
     description:
-      'Replace every element with its stable rank in ascending order: smallest value → 0, next → 1, … Ties: the value that appeared earlier in the input gets the smaller rank.',
-    cannotBeInput: (input) => !isSameArray(input, stableRanks(input)),
-    validator: (input, output) => {
-      if (input.length !== output.length) return false
-      const expected = stableRanks(input)
-      return expected.every((r, i) => Math.abs(output[i] - r) < 1e-6)
-    },
-    expectedOutput: (input) => formatArray(stableRanks(input)),
-  },
-
-  {
-    name: 'Parity Parade Sort',
-    isBoss: true,
-    description:
-      'Reorder the array: every element that sits at an even index in the input (0, 2, 4, …) first, preserving their relative order, followed by every element from odd indices (1, 3, 5, …), preserving their order.',
+      'Every number is stripped of its value and replaced by its social rank (0 for the biggest loser, $n-1$ for the prom king). If two numbers are equally "cool," the one who arrived at the party first ranks higher.',
     cannotBeInput: (input) => {
-      const evens = input.filter((_, i) => i % 2 === 0)
-      const odds = input.filter((_, i) => i % 2 !== 0)
-      return !isSameArray(input, [...evens, ...odds])
+        const ranks = [...input].map((v, i) => ({ v, i }))
+            .sort((a, b) => a.v - b.v || a.i - b.i)
+            .map((_, rank) => rank);
+        return !isSameArray(input, ranks);
     },
     validator: (input, output) => {
-      const evens = input.filter((_, i) => i % 2 === 0)
-      const odds = input.filter((_, i) => i % 2 !== 0)
-      return isSameArray([...evens, ...odds], output)
+      const expected = input.map((v, i) => ({ v, i }))
+        .sort((a, b) => a.v - b.v || a.i - b.i)
+        .map((obj, rank) => ({ ...obj, rank }))
+        .sort((a, b) => a.i - b.i)
+        .map(o => o.rank);
+      return isSameArray(expected, output);
     },
     expectedOutput: (input) => {
-      const evens = input.filter((_, i) => i % 2 === 0)
-      const odds = input.filter((_, i) => i % 2 !== 0)
-      return formatArray([...evens, ...odds])
+      const indexed = input.map((v, i) => ({ v, i }));
+      const sorted = [...indexed].sort((a, b) => a.v - b.v || a.i - b.i);
+      const result = new Array(input.length);
+      sorted.forEach((item, rank) => { result[item.i] = rank; });
+      return formatArray(result);
     },
   },
 
   {
-    name: 'Tricycle Flip Sort',
+    name: 'Noah\'s Ark Divorce',
     isBoss: true,
     description:
-      'Split the array into consecutive chunks of length 3 (the last chunk may be shorter). Reverse each chunk in place, then concatenate.',
+      'The animals are fighting. Move all even-indexed numbers to the left side of the boat and all odd-indexed numbers to the right side, keeping their original social circles (relative order) intact.',
     cannotBeInput: (input) => {
-      const expected: number[] = []
-      for (let i = 0; i < input.length; i += 3) {
-        expected.push(...input.slice(i, i + 3).reverse())
-      }
-      return !isSameArray(input, expected)
+      const evens = input.filter((_, i) => i % 2 === 0);
+      const odds = input.filter((_, i) => i % 2 !== 0);
+      return !isSameArray(input, [...evens, ...odds]);
     },
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      const expected: number[] = []
-      for (let i = 0; i < input.length; i += 3) {
-        expected.push(...input.slice(i, i + 3).reverse())
-      }
-      return isSameArray(expected, output)
+      const evens = input.filter((_, i) => i % 2 === 0);
+      const odds = input.filter((_, i) => i % 2 !== 0);
+      return isSameArray([...evens, ...odds], output);
     },
     expectedOutput: (input) => {
-      const out: number[] = []
-      for (let i = 0; i < input.length; i += 3) {
-        out.push(...input.slice(i, i + 3).reverse())
-      }
-      return formatArray(out)
+      const evens = input.filter((_, i) => i % 2 === 0);
+      const odds = input.filter((_, i) => i % 2 !== 0);
+      return formatArray([...evens, ...odds]);
     },
   },
 
   {
-    name: 'King of the Hill Sort',
+    name: 'IKEA Instruction Manual',
     isBoss: true,
     description:
-      'Running maximum: output[i] must equal the largest value among input[0] through input[i] (inclusive).',
+      'You built it in chunks of 3, but you read the manual backwards. Reverse every group of 3 elements (0-2, 3-5, etc.). If a piece is left over at the end, it stays exactly where it is.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      const expected: number[] = [];
+      for (let i = 0; i < input.length; i += 3) {
+        const chunk = input.slice(i, i + 3);
+        expected.push(...(chunk.length === 3 ? chunk.reverse() : chunk));
+      }
+      return isSameArray(expected, output);
+    },
+    expectedOutput: (input) => {
+      const out: number[] = [];
+      for (let i = 0; i < input.length; i += 3) {
+        const chunk = input.slice(i, i + 3);
+        out.push(...(chunk.length === 3 ? chunk.reverse() : chunk));
+      }
+      return formatArray(out);
+    },
+  },
+
+  {
+    name: 'Toxic Workplace Ego',
+    isBoss: true,
+    description:
+      'The "Running Max" culture. Every employee must act as important as the most important person to their left. If you were a 20 but the guy before you was an 80, you are now an 80.',
     cannotBeInput: (input) => {
-      let m = -Infinity
+      let m = -Infinity;
       return input.some((v) => {
-        m = Math.max(m, v)
-        return v !== m
-      })
+        const oldM = m;
+        m = Math.max(m, v);
+        return v < oldM;
+      });
     },
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      let m = -Infinity
-      for (let i = 0; i < input.length; i++) {
-        m = Math.max(m, input[i])
-        if (Math.abs(output[i] - m) > 1e-6) return false
-      }
-      return true
+      let m = -1;
+      return input.every((v, i) => {
+        m = Math.max(m, v);
+        return output[i] === m;
+      });
     },
     expectedOutput: (input) => {
-      let m = -Infinity
-      return formatArray(
-        input.map((v) => {
-          m = Math.max(m, v)
-          return m
-        }),
-      )
+      let m = -1;
+      return formatArray(input.map((v) => (m = Math.max(m, v))));
     },
   },
 
   {
-    name: 'Palindrome Meet Sort',
+    name: 'Narcissistic Mirror Sort',
     isBoss: true,
     description:
-      'Each output[i] must be the arithmetic mean of input[i] and input[n - 1 - i] where n is the length.',
+      'You only see yourself in others. Every number becomes the average of itself and its "mirror" from the opposite end of the array.',
     cannotBeInput: true,
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      const n = input.length
-      return input.every((v, i) => Math.abs(output[i] - (v + input[n - 1 - i]) / 2) < 1e-6)
+      const n = input.length;
+      return input.every((v, i) => Math.abs(output[i] - (v + input[n - 1 - i]) / 2) < 1e-6);
     },
     expectedOutput: (input) => {
-      const n = input.length
-      return formatArray(input.map((v, i) => (v + input[n - 1 - i]) / 2))
+      const n = input.length;
+      return formatArray(input.map((v, i) => (v + input[n - 1 - i]) / 2));
     },
   },
 
   {
-    name: 'Tertile Exodus Sort',
+    name: 'TSA Security Bin',
     isBoss: true,
     description:
-      'Stable three-way partition: all values strictly less than 34 first (original order), then values from 34 through 67 inclusive, then values strictly greater than 67.',
-    cannotBeInput: (input) => {
-      const low = input.filter((v) => v < 34)
-      const mid = input.filter((v) => v >= 34 && v <= 67)
-      const hi = input.filter((v) => v > 67)
-      return !isSameArray(input, [...low, ...mid, ...hi])
-    },
-    validator: (input, output) => {
-      const low = input.filter((v) => v < 34)
-      const mid = input.filter((v) => v >= 34 && v <= 67)
-      const hi = input.filter((v) => v > 67)
-      return isSameArray([...low, ...mid, ...hi], output)
-    },
-    expectedOutput: (input) => {
-      const low = input.filter((v) => v < 34)
-      const mid = input.filter((v) => v >= 34 && v <= 67)
-      const hi = input.filter((v) => v > 67)
-      return formatArray([...low, ...mid, ...hi])
-    },
-  },
-
-  {
-    name: 'Weave Stripe Sort',
-    isBoss: true,
-    description:
-      'Leave positions fixed: values at even indices (0,2,4,…) are replaced by the even-index values from the input, sorted ascending. Values at odd indices are replaced by the odd-index values from the input, sorted ascending.',
+      'Strict liquids rule. Anything under 34 stays in your bag (front), anything between 34 and 67 goes in the bin (middle), and anything over 67 requires a secondary pat-down (back). Original order must be preserved within bins.',
     cannotBeInput: true,
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b)
-      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b)
-      let ei = 0
-      let oi = 0
-      for (let i = 0; i < input.length; i++) {
-        const want = i % 2 === 0 ? evens[ei++] : odds[oi++]
-        if (Math.abs(output[i] - want) > 1e-6) return false
-      }
-      return true
+      const bins = [input.filter(v => v < 34), input.filter(v => v >= 34 && v <= 67), input.filter(v => v > 67)];
+      return isSameArray([...bins[0], ...bins[1], ...bins[2]], output);
     },
     expectedOutput: (input) => {
-      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b)
-      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b)
-      let ei = 0
-      let oi = 0
-      return formatArray(
-        input.map((_, i) => (i % 2 === 0 ? evens[ei++] : odds[oi++])),
-      )
+      const bins = [input.filter(v => v < 34), input.filter(v => v >= 34 && v <= 67), input.filter(v => v > 67)];
+      return formatArray([...bins[0], ...bins[1], ...bins[2]]);
     },
   },
 
   {
-    name: 'Ouroboros Product Sort',
+    name: 'Gentrified Neighborhood Sort',
     isBoss: true,
     description:
-      'Cyclic adjacent product: output[i] = input[i] × input[(i + 1) mod n], where n is the length (so the last position multiplies the last element by the first).',
-    cannotBeInput: (input) => input.length >= 2,
+      'The neighborhood is being renovated. The odd-index houses and even-index houses are being "upgraded" separately. Sort the values at even positions ascending, and the values at odd positions ascending, but keep them in their original even/odd slots.',
+    cannotBeInput: true,
     validator: (input, output) => {
-      if (input.length !== output.length || input.length === 0) return false
-      const n = input.length
-      return input.every((v, i) => Math.abs(output[i] - v * input[(i + 1) % n]) < 1e-6)
+      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b);
+      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b);
+      let ei = 0, oi = 0;
+      return input.every((_, i) => output[i] === (i % 2 === 0 ? evens[ei++] : odds[oi++]));
     },
     expectedOutput: (input) => {
-      const n = input.length
-      if (n === 0) return '[]'
-      return formatArray(input.map((v, i) => v * input[(i + 1) % n]))
+      const evens = input.filter((_, i) => i % 2 === 0).sort((a, b) => a - b);
+      const odds = input.filter((_, i) => i % 2 !== 0).sort((a, b) => a - b);
+      let ei = 0, oi = 0;
+      return formatArray(input.map((_, i) => (i % 2 === 0 ? evens[ei++] : odds[oi++])));
     },
   },
 
   {
-    name: 'Buddy System Sort',
+    name: 'Ponzi Scheme Sort',
     isBoss: true,
     description:
-      'Split into consecutive pairs (0–1), (2–3), … If length is odd, the last element stays at the end after sorting the pairs. Sort pairs in ascending lexicographic order (first element, then second), then flatten.',
-    cannotBeInput: (input) => input.length >= 2,
+      'Every number is "investing" in the person next to them. Multiply each value by the value of the person to its right. The last person in line is desperate and multiplies their value by the first person in the array.',
+    cannotBeInput: (input) => input.length > 1,
     validator: (input, output) => {
-      if (input.length !== output.length) return false
-      if (!multisetEqual(input, output)) return false
-      const n = input.length
-      const pairCount = Math.floor(n / 2)
-      const pairs: [number, number][] = []
-      for (let i = 0; i < pairCount; i++) pairs.push([input[i * 2], input[i * 2 + 1]])
-      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1])
-      const expected = pairs.flat()
-      if (n % 2 === 1) expected.push(input[n - 1])
-      return isSameArray(expected, output)
+      const n = input.length;
+      return input.every((v, i) => Math.abs(output[i] - (v * input[(i + 1) % n])) < 1e-6);
     },
     expectedOutput: (input) => {
-      const n = input.length
-      const pairCount = Math.floor(n / 2)
-      const pairs: [number, number][] = []
-      for (let i = 0; i < pairCount; i++) pairs.push([input[i * 2], input[i * 2 + 1]])
-      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1])
-      const flat = pairs.flat()
-      if (n % 2 === 1) flat.push(input[n - 1])
-      return formatArray(flat)
+      const n = input.length;
+      return formatArray(input.map((v, i) => v * input[(i + 1) % n]));
     },
   },
-]
+
+  {
+    name: 'Blind Date Disaster',
+    isBoss: true,
+    description:
+      'Everyone is paired up (0-1, 2-3, etc.). Each pair is judged as a unit: the "best" couples (based on the first person, then the second) move to the front of the line. If you don\'t have a date (odd length), you wait at the end.',
+    cannotBeInput: (input) => input.length >= 2,
+    validator: (input, output) => {
+      const n = input.length;
+      const pairs: [number, number][] = [];
+      for (let i = 0; i < Math.floor(n / 2); i++) pairs.push([input[i * 2], input[i * 2 + 1]]);
+      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const expected = pairs.flat();
+      if (n % 2 !== 0) expected.push(input[n - 1]);
+      return isSameArray(expected, output);
+    },
+    expectedOutput: (input) => {
+      const n = input.length;
+      const pairs: [number, number][] = [];
+      for (let i = 0; i < Math.floor(n / 2); i++) pairs.push([input[i * 2], input[i * 2 + 1]]);
+      pairs.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const res = pairs.flat();
+      if (n % 2 !== 0) res.push(input[n - 1]);
+      return formatArray(res);
+    },
+  },
+];
 
 export function getRandomBossSort(): SillySort {
   return BOSS_SORTS[Math.floor(Math.random() * BOSS_SORTS.length)]

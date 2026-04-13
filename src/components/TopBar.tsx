@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react'
+import { Clock, Sparkles } from 'lucide-react'
 
 function formatMmSs(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds))
@@ -25,20 +25,35 @@ export default function TopBar({
 
   return (
     <div className="sticky top-0 z-10 border-b border-zinc-800/80 bg-zinc-950/55 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:gap-6 sm:py-3.5">
-        <div className="flex min-w-0 shrink-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-cyan-500 text-white shadow-pop sm:h-11 sm:w-11">
-            <span className="text-xs font-black tracking-widest">SS</span>
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-extrabold leading-tight sm:text-base">
-              <span className="title-gradient">Silly Sort</span>
+      <div className="mx-auto flex max-w-[1920px] items-center gap-4 px-4 py-3 sm:gap-6 sm:px-5 sm:py-3.5">
+        <a
+          href="/"
+          className="group flex min-w-0 shrink-0 items-center gap-3 rounded-2xl pr-2 outline-none transition hover:opacity-95 focus-visible:ring-2 focus-visible:ring-fuchsia-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+          aria-label="Silly Sort — home"
+        >
+          <div
+            className="relative flex h-11 w-11 shrink-0 flex-col items-center justify-end gap-0 rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-cyan-500 p-1.5 shadow-[0_10px_40px_-8px_rgba(139,92,246,0.65),inset_0_1px_0_rgba(255,255,255,0.25)] ring-1 ring-white/15 sm:h-12 sm:w-12"
+            aria-hidden
+          >
+            <div className="flex h-full w-full items-end justify-center gap-1 px-0.5 pb-0.5 pt-1">
+              <span className="h-2 w-1.5 rounded-sm bg-white/75 shadow-sm transition-transform duration-300 group-hover:scale-y-110 sm:h-2.5" />
+              <span className="h-3 w-1.5 rounded-sm bg-white/90 shadow-sm transition-transform duration-300 group-hover:scale-y-110 sm:h-3.5" />
+              <span className="h-[18px] w-1.5 rounded-sm bg-white shadow-sm transition-transform duration-300 group-hover:scale-y-110 sm:h-5" />
             </div>
-            <div className="hidden text-xs text-zinc-400 sm:block">
-              Weird rules. Real Python.
-            </div>
+            <span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-md bg-zinc-950/90 shadow-md ring-1 ring-fuchsia-400/40">
+              <Sparkles className="h-2.5 w-2.5 text-amber-200" strokeWidth={2.5} aria-hidden />
+            </span>
           </div>
-        </div>
+          <div className="min-w-0 text-left">
+            <h1 className="truncate font-black leading-[1.05] tracking-tight">
+              <span className="title-gradient text-[1.05rem] sm:text-xl">Silly Sort</span>
+            </h1>
+            <div className="mt-1 h-0.5 w-12 max-w-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 opacity-90 sm:w-14" />
+            <p className="mt-1.5 hidden text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:block">
+              Weird rules · Real Python
+            </p>
+          </div>
+        </a>
 
         <div className="min-w-0 flex-1">
           <div
