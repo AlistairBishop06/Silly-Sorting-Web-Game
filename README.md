@@ -45,10 +45,10 @@ The largest number demands attention — it must be moved to the front.
 - ⚡ Vite (build tool)
 
 ---
+## How To Play
+### 🚀 Run Locally
 
-## 🚀 Run Locally
-
-### 1. Clone the repo
+#### 1. Clone the repo
 ```bash
 git clone https://github.com/your-username/silly-sort.git
 cd silly-sort
@@ -62,6 +62,9 @@ npm run dev
 Then open:
 
 http://localhost:5173
+
+### 🚀 Visit the Website
+simply visit https://sillysort.vercel.app/
 
 ## 🧩 Adding New “Silly Sorts”
 
