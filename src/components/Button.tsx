@@ -7,17 +7,17 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 disabled:pointer-events-none disabled:opacity-50'
+  'focus-ring inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all disabled:pointer-events-none disabled:opacity-50 active:translate-y-px'
 
 const variants: Record<NonNullable<Props['variant']>, string> = {
   primary:
-    'bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-400',
+    'shadow-pop bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 text-white hover:brightness-110',
   secondary:
-    'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white',
+    'bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white',
   ghost:
-    'bg-transparent text-zinc-900 hover:bg-zinc-200/70 dark:text-zinc-100 dark:hover:bg-zinc-800/70',
+    'bg-white/40 text-zinc-900 shadow-sm hover:bg-white/70 hover:shadow-md dark:bg-zinc-950/30 dark:text-zinc-100 dark:hover:bg-zinc-950/60 dark:hover:shadow-zinc-950/30',
   danger:
-    'bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400',
+    'bg-gradient-to-r from-rose-600 to-orange-500 text-white shadow-pop hover:brightness-110',
 }
 
 const sizes: Record<NonNullable<Props['size']>, string> = {
@@ -38,4 +38,3 @@ export default function Button({
     />
   )
 }
-

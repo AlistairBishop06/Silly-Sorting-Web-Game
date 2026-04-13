@@ -92,7 +92,7 @@ export default function BarChart({
   const highlight = new Set(highlightIndices ?? [])
 
   return (
-    <div className="h-64 w-full rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="h-64 w-full rounded-2xl border border-zinc-200/70 bg-white/55 p-4 shadow-lg shadow-violet-500/5 backdrop-blur-md dark:border-zinc-800/70 dark:bg-zinc-950/35 dark:shadow-violet-500/10">
       <div className="flex h-full items-end gap-2">
         {bars.map((bar, idx) => {
           const safeValue = Number.isFinite(bar.value) ? bar.value : 0
@@ -110,15 +110,15 @@ export default function BarChart({
                       if (!el) refs.current.delete(bar.id)
                       else refs.current.set(bar.id, el)
                     }}
-                    style={style}
-                    className={clsx(
-                      'w-full rounded-md transition-[height,background-color] duration-300 ease-in-out',
-                      isHot
-                        ? 'bg-amber-400 dark:bg-amber-300'
-                        : 'bg-violet-500 dark:bg-violet-400',
-                    )}
-                    title={String(safeValue)}
-                  />
+                  style={style}
+                  className={clsx(
+                    'w-full rounded-lg transition-[height,filter] duration-300 ease-in-out will-change-[height,transform] shadow-sm',
+                    isHot
+                      ? 'bg-gradient-to-t from-amber-400 via-orange-400 to-rose-400 dark:from-amber-300 dark:via-orange-300 dark:to-rose-300'
+                      : 'bg-gradient-to-t from-violet-600 via-fuchsia-500 to-cyan-400 dark:from-violet-500 dark:via-fuchsia-400 dark:to-cyan-300',
+                  )}
+                  title={String(safeValue)}
+                />
                 </div>
                 <div className="mt-2 select-none text-center text-sm font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">
                   {Math.round(safeValue * 100) / 100}

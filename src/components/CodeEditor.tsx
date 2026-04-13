@@ -11,7 +11,7 @@ export default function CodeEditor({
 }) {
   // Monaco renders its own theme; we use `vs-dark` so it looks good in both modes.
   return (
-    <div className="h-[420px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="h-[420px] overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/70 shadow-lg shadow-violet-500/5 backdrop-blur-md dark:border-zinc-800/70 dark:bg-zinc-950/45 dark:shadow-violet-500/10">
       <Editor
         height="420px"
         defaultLanguage="python"

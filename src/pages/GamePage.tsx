@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import CodeEditor from '../components/CodeEditor'
 import FeedbackBanner from '../components/FeedbackBanner'
 import TopBar from '../components/TopBar'
+import WinOverlay from '../components/WinOverlay'
 import { defaultStarterCode } from '../utils/starterCode'
 import { runSillySort } from '../utils/pyodideRunner'
 import { getRandomSillySort, validateSillySort, type SillySort } from '../utils/sillySorts'
@@ -241,16 +242,25 @@ export default function GamePage() {
         streak={streak}
         multiplier={multiplier}
         secondsLeft={secondsLeft}
+        roundSeconds={ROUND_SECONDS}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((d) => !d)}
         onNextChallenge={nextChallenge}
         canNext={hasSolved}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      {hasSolved ? (
+        <WinOverlay
+          title="You did the impossible."
+          subtitle="Take the win. New nonsense awaits."
+          onNext={nextChallenge}
+        />
+      ) : null}
+
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="card p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -274,7 +284,7 @@ export default function GamePage() {
               </div>
 
               {runState.kind === 'done' && runState.steps.length > 1 ? (
-                <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                <div className="card-soft mt-4 p-3 text-xs text-zinc-700 dark:text-zinc-300">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-semibold text-zinc-900 dark:text-zinc-100">Playback</div>
                     <div className="tabular-nums">
@@ -327,7 +337,7 @@ export default function GamePage() {
             ) : null}
 
             {runState.kind === 'done' && runState.stdout.trim().length > 0 ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              <div className="card-soft p-3 text-xs text-zinc-700 dark:text-zinc-300">
                 <div className="mb-2 font-semibold text-zinc-900 dark:text-zinc-100">stdout</div>
                 <pre className="max-h-40 overflow-auto whitespace-pre-wrap scrollbar-thin">{runState.stdout}</pre>
               </div>
@@ -335,18 +345,20 @@ export default function GamePage() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="card p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     This round's prompt
                   </div>
-                  <div className="mt-1 text-lg font-semibold">{sort.name}</div>
+                  <div className="mt-1 text-lg font-extrabold">
+                    <span className="title-gradient">{sort.name}</span>
+                  </div>
                   <div className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{sort.description}</div>
                   <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     An Example of an Expected output
                   </div>
-                  <pre className="mt-1 overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                  <pre className="mt-1 overflow-auto rounded-lg border border-zinc-200/70 bg-white/60 px-3 py-2 text-xs text-zinc-800 shadow-sm backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:text-zinc-200">
                     {sort.expectedOutput(input)}
                   </pre>
                   {forbidUnchangedForThisInput ? (
@@ -381,13 +393,13 @@ export default function GamePage() {
               </Button>
 
               <div className="ml-auto flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                <span className="rounded-lg border border-zinc-200 bg-white px-2 py-1 dark:border-zinc-800 dark:bg-zinc-950">
+                <span className="pill">
                   Input: {input.join(', ')}
                 </span>
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+            <div className="card-soft p-3 text-xs text-zinc-600 dark:text-zinc-400">
               <div className="font-semibold text-zinc-900 dark:text-zinc-100">Execution notes</div>
               <ul className="mt-1 list-disc space-y-1 pl-5">
                 <li>Runs in your browser using Pyodide (no server). Timeout: ~0.8s.</li>
