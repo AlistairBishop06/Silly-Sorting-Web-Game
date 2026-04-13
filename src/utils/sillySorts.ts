@@ -97,15 +97,6 @@ export const SILLY_SORTS: SillySort[] = [
   },
 
   {
-    name: 'Anxious Sort',
-    description:
-      'Return the array sorted in ascending order. Must contain all original elements.',
-    cannotBeInput: (input) => !isSortedAsc(input),
-    validator: (_input, output) => isSortedAsc(output),
-    expectedOutput: (input) => formatArray([...input].sort((a, b) => a - b)),
-  },
-
-  {
     name: 'Ego Sort',
     description:
       'Move the maximum value to index 0. All other elements must remain in original relative order.',
@@ -305,11 +296,37 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Introvert Sort',
     description:
-      'Return any valid non-empty array derived from input without changing length.',
+      'Sort the array in ascending order, but insert a None (null) value between every element. The output must alternate between numbers and nulls, starting and ending with a number.',
     cannotBeInput: true,
-    validator: (input, output) =>
-      input.length === output.length && output.length > 0,
-    expectedOutput: (input) => formatArray(input),
+    validator: (input, output) => {
+      if (input.length === 0) return output.length === 0
+
+      const sorted = [...input].sort((a, b) => a - b)
+
+      // must be: num, null, num, null...
+      if (output.length !== sorted.length * 2 - 1) return false
+
+      for (let i = 0; i < output.length; i++) {
+        if (i % 2 === 0) {
+          if (output[i] !== sorted[i / 2]) return false
+        } else {
+          if (output[i] !== null) return false
+        }
+      }
+
+      return true
+    },
+    expectedOutput: (input) => {
+      const sorted = [...input].sort((a, b) => a - b)
+      const result: (number | null)[] = []
+
+      for (let i = 0; i < sorted.length; i++) {
+        result.push(sorted[i])
+        if (i !== sorted.length - 1) result.push(null)
+      }
+
+      return formatArray(result as number[])
+    },
   },
 
   {
@@ -489,6 +506,141 @@ export const SILLY_SORTS: SillySort[] = [
       return formatArray(input.filter((v) => v >= avg))
     },
   },
+
+  {
+    name: 'Sniper Sort',
+    description: 'Remove the first occurrence of the maximum value. All other elements keep their original order.',
+    cannotBeInput: (input) => {
+      if (input.length === 0) return false
+      const mx = Math.max(...input)
+      return input.indexOf(mx) === -1
+    },
+    validator: (input, output) => {
+      if (input.length === 0) return output.length === 0
+      const mx = Math.max(...input)
+      const idx = input.indexOf(mx)
+      const expected = [...input.slice(0, idx), ...input.slice(idx + 1)]
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => {
+      if (input.length === 0) return '[]'
+      const mx = Math.max(...input)
+      const idx = input.indexOf(mx)
+      return formatArray([...input.slice(0, idx), ...input.slice(idx + 1)])
+    },
+    
+  },
+  
+  {
+    name: 'Tidal Sort',
+    description: 'Reorder by alternately picking the current minimum then maximum from remaining elements.',
+    cannotBeInput: (input) => {
+      if (input.length <= 1) return false
+      const pool = [...input]
+      const result: number[] = []
+      let pickMin = true
+      while (pool.length) {
+        const idx = pickMin
+          ? pool.indexOf(Math.min(...pool))
+          : pool.indexOf(Math.max(...pool))
+        result.push(pool.splice(idx, 1)[0])
+        pickMin = !pickMin
+      }
+      return !isSameArray(input, result)
+    },
+    validator: (_input, output) => {
+      if (output.length <= 1) return true
+      const pool = [...output]
+      const result: number[] = []
+      let pickMin = true
+      while (pool.length) {
+        const idx = pickMin
+          ? pool.indexOf(Math.min(...pool))
+          : pool.indexOf(Math.max(...pool))
+        result.push(pool.splice(idx, 1)[0])
+        pickMin = !pickMin
+      }
+      return isSameArray(output, result)
+    },
+    expectedOutput: (input) => {
+      const pool = [...input]
+      const result: number[] = []
+      let pickMin = true
+      while (pool.length) {
+        const idx = pickMin
+          ? pool.indexOf(Math.min(...pool))
+          : pool.indexOf(Math.max(...pool))
+        result.push(pool.splice(idx, 1)[0])
+        pickMin = !pickMin
+      }
+      return formatArray(result)
+    },
+  },
+
+  {
+    name: 'Clown Sort',
+    description: 'Interleave the ascending-sorted and descending-sorted versions of the array (sorted first, then reversed, alternating by index).',
+    cannotBeInput: (input) => {
+      const asc = [...input].sort((a, b) => a - b)
+      const desc = [...input].sort((a, b) => b - a)
+      const expected = input.map((_, i) => (i % 2 === 0 ? asc[i >> 1] : desc[i >> 1]))
+      // actually interleave: position 0 from asc[0], position 1 from desc[0], etc.
+      const result: number[] = []
+      for (let i = 0; i < input.length; i++)
+        result.push(i % 2 === 0 ? asc[Math.floor(i / 2)] : desc[Math.floor(i / 2)])
+      return !isSameArray(input, result)
+    },
+    validator: (_input, output) => {
+      const asc = [...output].sort((a, b) => a - b)
+      const desc = [...output].sort((a, b) => b - a)
+      // Reconstruct what the clown output should look like given these elements
+      // It's valid if output[i] matches the pattern
+      const evens = output.filter((_, i) => i % 2 === 0)
+      const odds = output.filter((_, i) => i % 2 !== 0)
+      return isSortedAsc(evens) && isSortedAsc([...odds].reverse())
+    },
+    expectedOutput: (input) => {
+      const asc = [...input].sort((a, b) => a - b)
+      const desc = [...input].sort((a, b) => b - a)
+      const result: number[] = []
+      for (let i = 0; i < input.length; i++)
+        result.push(i % 2 === 0 ? asc[Math.floor(i / 2)] : desc[Math.floor(i / 2)])
+      return formatArray(result)
+    },
+  },
+
+  {
+    name: 'Memory Leak Sort',
+    description:
+      'Each step loses one element from the array until sorted.',
+    cannotBeInput: true,
+    validator: (_input, output) => output.length <= 10,
+    expectedOutput: (input) => formatArray(input.slice(0, Math.floor(input.length / 2))),
+  },
+
+  {
+    name: 'Quantum Sort',
+    description:
+      'Array must be both sorted and unsorted at the same time (valid if it is monotonic or constant).',
+    cannotBeInput: true,
+    validator: (_input, output) => {
+      const asc = isSortedAsc(output)
+      const allSame = output.every((v) => v === output[0])
+      return asc || allSame
+    },
+    expectedOutput: (input) => formatArray([...input].sort((a, b) => a - b)),
+  },
+
+  {
+    name: 'Identity Crisis Sort',
+    description:
+      'At least one element must change, but multiset must remain identical.',
+    cannotBeInput: true,
+    validator: (input, output) =>
+      multisetEqual(input, output) && !isSameArray(input, output),
+    expectedOutput: (input) => formatArray([...input].reverse()),
+  }
+
 ]
 
 export function getRandomSillySort(): SillySort {
