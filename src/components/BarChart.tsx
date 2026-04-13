@@ -103,22 +103,24 @@ export default function BarChart({
 
           return (
             <div key={bar.id} className="flex h-full flex-1 items-end">
-              <div className="w-full">
-                <div
-                  ref={(el) => {
-                    if (!el) refs.current.delete(bar.id)
-                    else refs.current.set(bar.id, el)
-                  }}
-                  style={style}
-                  className={clsx(
-                    'w-full rounded-md transition-[height,background-color] duration-300 ease-in-out',
-                    isHot
-                      ? 'bg-amber-400 dark:bg-amber-300'
-                      : 'bg-violet-500 dark:bg-violet-400',
-                  )}
-                  title={String(safeValue)}
-                />
-                <div className="mt-2 select-none text-center text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+              <div className="flex h-full w-full flex-col">
+                <div className="flex flex-1 items-end">
+                  <div
+                    ref={(el) => {
+                      if (!el) refs.current.delete(bar.id)
+                      else refs.current.set(bar.id, el)
+                    }}
+                    style={style}
+                    className={clsx(
+                      'w-full rounded-md transition-[height,background-color] duration-300 ease-in-out',
+                      isHot
+                        ? 'bg-amber-400 dark:bg-amber-300'
+                        : 'bg-violet-500 dark:bg-violet-400',
+                    )}
+                    title={String(safeValue)}
+                  />
+                </div>
+                <div className="mt-2 select-none text-center text-sm font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">
                   {Math.round(safeValue * 100) / 100}
                 </div>
               </div>

@@ -90,15 +90,44 @@ export default function GamePage() {
     return hot
   }, [playStep, runState])
 
-  async function handleRun({ submit }: { submit: boolean }) {
-    setFeedback(null)
-    setRunState({ kind: 'running' })
-    setPlayStep(0)
-    setIsPlaying(false)
+  function stopPlayback() {
     if (playTimer.current) {
       window.clearInterval(playTimer.current)
       playTimer.current = null
     }
+    setIsPlaying(false)
+  }
+
+  function startPlayback(stepsLength: number) {
+    stopPlayback()
+    if (stepsLength <= 1) return
+    setIsPlaying(true)
+    playTimer.current = window.setInterval(() => {
+      setPlayStep((s) => {
+        const next = s + 1
+        if (next >= stepsLength) {
+          stopPlayback()
+          return Math.max(0, stepsLength - 1)
+        }
+        return next
+      })
+    }, 350)
+  }
+
+  async function handleRun({ submit }: { submit: boolean }) {
+    if (submit && hasSolved) {
+      setFeedback({
+        kind: 'info',
+        title: 'Already solved',
+        detail: 'Hit “Next Challenge” to earn more points.',
+      })
+      return
+    }
+
+    setFeedback(null)
+    setRunState({ kind: 'running' })
+    setPlayStep(0)
+    stopPlayback()
 
     const result = await runSillySort({ code, input, timeoutMs: 800 })
 
@@ -113,7 +142,14 @@ export default function GamePage() {
     }
 
     setRunState({ kind: 'done', output: result.output, steps: result.steps, stdout: result.stdout })
-    setPlayStep(Math.max(0, result.steps.length - 1))
+
+    if (submit) {
+      setPlayStep(Math.max(0, result.steps.length - 1))
+    } else {
+      // For "Run Code", autoplay the captured steps from the start.
+      setPlayStep(0)
+      startPlayback(result.steps.length)
+    }
 
     if (!submit) {
       setFeedback({
@@ -150,7 +186,7 @@ export default function GamePage() {
     setRunState({ kind: 'idle' })
     setFeedback(null)
     setPlayStep(0)
-    setIsPlaying(false)
+    stopPlayback()
   }
 
   function generateNewNumbers() {
@@ -160,7 +196,7 @@ export default function GamePage() {
     setRunState({ kind: 'idle' })
     setFeedback(null)
     setPlayStep(0)
-    setIsPlaying(false)
+    stopPlayback()
   }
 
   function nextChallenge() {
@@ -174,7 +210,7 @@ export default function GamePage() {
     setHasSolved(false)
     setRoundEndsAt(Date.now() + ROUND_SECONDS * 1000)
     setPlayStep(0)
-    setIsPlaying(false)
+    stopPlayback()
   }
 
   return (
@@ -245,26 +281,9 @@ export default function GamePage() {
                       variant="secondary"
                       size="sm"
                       onClick={() => {
-                        if (playTimer.current) {
-                          window.clearInterval(playTimer.current)
-                          playTimer.current = null
-                          setIsPlaying(false)
-                          return
-                        }
-                        setIsPlaying(true)
-                        playTimer.current = window.setInterval(() => {
-                          setPlayStep((s) => {
-                            if (runState.kind !== 'done') return s
-                            const next = s + 1
-                            if (next >= runState.steps.length) {
-                              if (playTimer.current) window.clearInterval(playTimer.current)
-                              playTimer.current = null
-                              setIsPlaying(false)
-                              return runState.steps.length - 1
-                            }
-                            return next
-                          })
-                        }, 350)
+                        if (runState.kind !== 'done') return
+                        if (isPlaying) stopPlayback()
+                        else startPlayback(runState.steps.length)
                       }}
                     >
                       {isPlaying ? 'Pause' : 'Play'}
@@ -324,7 +343,7 @@ export default function GamePage() {
               </Button>
               <Button
                 onClick={() => void handleRun({ submit: true })}
-                disabled={runState.kind === 'running' || secondsLeft === 0}
+                disabled={runState.kind === 'running' || secondsLeft === 0 || hasSolved}
               >
                 Submit Solution
               </Button>
