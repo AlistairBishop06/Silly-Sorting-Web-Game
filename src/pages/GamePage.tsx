@@ -90,6 +90,13 @@ export default function GamePage() {
     return hot
   }, [playStep, runState])
 
+  const forbidUnchangedForThisInput = useMemo(() => {
+    if (!sort.cannotBeInput) return false
+    return typeof sort.cannotBeInput === 'function'
+      ? sort.cannotBeInput(input)
+      : true
+  }, [input, sort])
+
   function stopPlayback() {
     if (playTimer.current) {
       window.clearInterval(playTimer.current)
@@ -141,14 +148,20 @@ export default function GamePage() {
       return
     }
 
-    setRunState({ kind: 'done', output: result.output, steps: result.steps, stdout: result.stdout })
+    let steps = result.steps
+    const outputDiffers =
+      input.length !== result.output.length ||
+      input.some((v, i) => v !== result.output[i])
+    if (steps.length <= 1 && outputDiffers) steps = [input, result.output]
+
+    setRunState({ kind: 'done', output: result.output, steps, stdout: result.stdout })
 
     if (submit) {
-      setPlayStep(Math.max(0, result.steps.length - 1))
+      setPlayStep(Math.max(0, steps.length - 1))
     } else {
       // For "Run Code", autoplay the captured steps from the start.
       setPlayStep(0)
-      startPlayback(result.steps.length)
+      startPlayback(steps.length)
     }
 
     if (!submit) {
@@ -161,6 +174,9 @@ export default function GamePage() {
     }
 
     const ok = validateSillySort(sort, input, result.output)
+    const unchanged =
+      input.length === result.output.length &&
+      input.every((v, i) => v === result.output[i])
     if (ok) {
       setHasSolved(true)
       setScore((s) => s + 1 * multiplier)
@@ -168,7 +184,7 @@ export default function GamePage() {
       setFeedback({
         kind: 'success',
         title: '✅ Success',
-        detail: `Rule satisfied: ${sort.description}`,
+        detail: `Expected output: ${sort.expectedOutput(input)}`,
       })
     } else {
       setHasSolved(false)
@@ -176,7 +192,12 @@ export default function GamePage() {
       setFeedback({
         kind: 'error',
         title: '❌ Rule violated',
-        detail: `Expected: ${sort.description} | Got: [${result.output.join(', ')}]`,
+        detail:
+          forbidUnchangedForThisInput && unchanged
+            ? `This prompt requires output to NOT equal the input. Expected output: ${sort.expectedOutput(
+                input,
+              )} | Got unchanged input.`
+            : `Expected output: ${sort.expectedOutput(input)} | Got: [${result.output.join(', ')}]`,
       })
     }
   }
@@ -322,6 +343,17 @@ export default function GamePage() {
                   </div>
                   <div className="mt-1 text-lg font-semibold">{sort.name}</div>
                   <div className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{sort.description}</div>
+                  <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    An Example of an Expected output
+                  </div>
+                  <pre className="mt-1 overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                    {sort.expectedOutput(input)}
+                  </pre>
+                  {forbidUnchangedForThisInput ? (
+                    <div className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
+                      Rule twist: output must not be identical to the input.
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => setCode(defaultStarterCode)}>

@@ -130,9 +130,9 @@ def run_user(code, input_arr):
             return {"ok": False, "error": "Return a list (or mutate arr and return it).", "stdout": stdout.getvalue()}
 
         steps = traced.steps()
-        # If the user returned a new list, we may not have captured transitions.
+        # If the user returned a new list (or changed the length), we may not have captured transitions.
         # Still, include the final output as the last frame when it differs.
-        if len(steps) > 0 and len(output) == len(steps[-1]) and output != steps[-1]:
+        if len(steps) > 0 and output != steps[-1]:
             steps.append(list(output))
 
         return {
