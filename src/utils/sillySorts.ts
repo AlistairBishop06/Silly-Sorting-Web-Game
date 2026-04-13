@@ -639,6 +639,379 @@ export const SILLY_SORTS: SillySort[] = [
     validator: (input, output) =>
       multisetEqual(input, output) && !isSameArray(input, output),
     expectedOutput: (input) => formatArray([...input].reverse()),
+  },
+
+  {
+    name: 'Ghost Sort',
+    description: 'The array transcends this physical dimension. Returns an empty array.',
+    cannotBeInput: (input) => input.length > 0,
+    validator: (_input, output) => output.length === 0,
+    expectedOutput: () => '[]',
+  },
+
+  {
+    name: 'Inflation Sort',
+    description: 'Every value increases by 1 to account for economic shifts.',
+    cannotBeInput: true,
+    validator: (input, output) =>
+      input.length === output.length && input.every((v, i) => output[i] === v + 1),
+    expectedOutput: (input) => formatArray(input.map((v) => v + 1)),
+  },
+
+  {
+    name: 'Pessimist Sort',
+    description: 'Replace every element with the minimum value of the array.',
+    cannotBeInput: (input) => {
+      if (input.length === 0) return false
+      const mn = Math.min(...input)
+      return input.some((v) => v !== mn)
+    },
+    validator: (input, output) => {
+      const mn = Math.min(...input)
+      return output.length === input.length && output.every((v) => v === mn)
+    },
+    expectedOutput: (input) => {
+      const mn = Math.min(...input)
+      return formatArray(input.map(() => mn))
+    },
+  },
+
+  {
+    name: 'Dictionary Sort',
+    description: 'Sort the numbers alphabetically based on their string representation.',
+    cannotBeInput: (input) => {
+      const expected = [...input].sort((a, b) => String(a).localeCompare(String(b)))
+      return !isSameArray(input, expected)
+    },
+    validator: (_input, output) => {
+      const expected = [...output].sort((a, b) => String(a).localeCompare(String(b)))
+      return isSameArray(output, expected)
+    },
+    expectedOutput: (input) =>
+      formatArray([...input].sort((a, b) => String(a).localeCompare(String(b)))),
+  },
+
+  {
+    name: 'Deja Vu Sort',
+    description: 'Replace the second half of the array with a exact copy of the first half.',
+    cannotBeInput: (input) => {
+      const half = Math.floor(input.length / 2)
+      const first = input.slice(0, half)
+      const second = input.slice(input.length - half)
+      return !isSameArray(first, second)
+    },
+    validator: (input, output) => {
+      const half = Math.floor(input.length / 2)
+      const firstHalf = output.slice(0, half)
+      const secondHalf = output.slice(output.length - half)
+      return isSameArray(firstHalf, secondHalf) && output.length === input.length
+    },
+    expectedOutput: (input) => {
+      const half = Math.floor(input.length / 2)
+      const first = input.slice(0, half)
+      const result = [...input]
+      for (let i = 0; i < half; i++) {
+        result[input.length - half + i] = first[i]
+      }
+      return formatArray(result)
+    },
+  },
+
+  {
+    name: 'Middle Management Sort',
+    description: 'Remove the first and last elements of the array.',
+    cannotBeInput: (input) => input.length >= 2,
+    validator: (input, output) => {
+      if (input.length < 2) return output.length === 0
+      return isSameArray(input.slice(1, -1), output)
+    },
+    expectedOutput: (input) =>
+      input.length < 2 ? '[]' : formatArray(input.slice(1, -1)),
+  },
+
+  {
+    name: 'Clickbait Sort',
+    description: 'The first element is replaced with 999,999 to grab attention. The rest remain unchanged.',
+    cannotBeInput: (input) => input.length > 0 && input[0] !== 999999,
+    validator: (input, output) =>
+      output.length === input.length && output[0] === 999999 && isSameArray(input.slice(1), output.slice(1)),
+    expectedOutput: (input) =>
+      input.length === 0 ? '[]' : formatArray([999999, ...input.slice(1)]),
+  },
+
+  {
+    name: 'Aesthetic Sort',
+    description: 'Sort elements by the number of digits they contain (ascending).',
+    cannotBeInput: (input) => {
+      const expected = [...input].sort((a, b) => String(Math.abs(a)).length - String(Math.abs(b)).length)
+      return !isSameArray(input, expected)
+    },
+    validator: (_input, output) => {
+      const lens = output.map(v => String(Math.abs(v)).length)
+      return isSortedAsc(lens)
+    },
+    expectedOutput: (input) =>
+      formatArray([...input].sort((a, b) => String(Math.abs(a)).length - String(Math.abs(b)).length)),
+  },
+
+  {
+    name: 'Thanos Sort',
+    description: 'Perfectly balanced. Delete exactly half of the elements (rounded down).',
+    cannotBeInput: (input) => input.length >= 2,
+    validator: (input, output) => output.length === Math.ceil(input.length / 2),
+    expectedOutput: (input) => formatArray(input.slice(0, Math.ceil(input.length / 2))),
+  },
+
+  {
+    name: 'Binary Sort',
+    description: 'Convert every number to 1 if it is greater than the mean, otherwise 0.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      const avg = average(input)
+      return output.every((v, i) => v === (input[i] > avg ? 1 : 0))
+    },
+    expectedOutput: (input) => {
+      const avg = average(input)
+      return formatArray(input.map((v) => (v > avg ? 1 : 0)))
+    },
+  },
+
+  {
+    name: 'Mirror Sort',
+    description: 'The array becomes a palindrome by appending its own reverse.',
+    cannotBeInput: true,
+    validator: (_input, output) => {
+      const rev = [...output].reverse()
+      return isSameArray(output, rev)
+    },
+    expectedOutput: (input) => formatArray([...input, ...[...input].reverse()]),
+  },
+
+  {
+    name: 'Ancestry Sort',
+    description: 'Each element becomes the sum of itself and all previous elements (Prefix Sum).',
+    cannotBeInput: (input) => {
+        if (input.length <= 1) return false;
+        return input[1] !== (input[0] + input[1]); // Simple check for first transition
+    },
+    validator: (input, output) => {
+      let sum = 0
+      return input.every((v, i) => {
+        sum += v
+        return output[i] === sum
+      })
+    },
+    expectedOutput: (input) => {
+      let sum = 0
+      return formatArray(input.map((v) => (sum += v)))
+    },
+  },
+
+  {
+    name: 'Privacy Sort',
+    description: 'Redact all information. Replace every element with -1.',
+    cannotBeInput: (input) => input.some((v) => v !== -1),
+    validator: (_input, output) => output.every((v) => v === -1),
+    expectedOutput: (input) => formatArray(input.map(() => -1)),
+  },
+
+  {
+    name: 'Speed Limit Sort',
+    description: 'Any value exceeding 70 is "pulled over" and reduced to 70.',
+    cannotBeInput: (input) => input.some((v) => v > 70),
+    validator: (input, output) =>
+      input.every((v, i) => output[i] === (v > 70 ? 70 : v)),
+    expectedOutput: (input) => formatArray(input.map((v) => (v > 70 ? 70 : v))),
+  },
+
+  {
+    name: 'Small Talk Sort',
+    description: 'The values are irrelevant. Replace every element with its index in the array.',
+    cannotBeInput: (input) => input.some((v, i) => v !== i),
+    validator: (input, output) =>
+      output.length === input.length && output.every((v, i) => v === i),
+    expectedOutput: (input) => formatArray(input.map((_, i) => i)),
+  },
+
+  {
+    name: 'Dating App Sort',
+    description: 'Swipe left on low standards. Keep only values greater than or equal to 50. Order remains unchanged.',
+    cannotBeInput: (input) => input.some((v) => v < 50),
+    validator: (input, output) => {
+      const expected = input.filter((v) => v >= 50)
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => formatArray(input.filter((v) => v >= 50)),
+  },
+
+  {
+    name: 'Tall Poppy Sort',
+    description: 'The highest value is cut down. Replace the maximum value with the second-highest value in the array.',
+    cannotBeInput: (input) => {
+      if (input.length < 2) return false
+      const mx = Math.max(...input)
+      return input.includes(mx)
+    },
+    validator: (input, output) => {
+      if (input.length === 0) return output.length === 0
+      const sortedUnique = [...new Set(input)].sort((a, b) => b - a)
+      const mx = sortedUnique[0]
+      const second = sortedUnique[1] ?? mx
+      const expected = input.map((v) => (v === mx ? second : v))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => {
+      const sortedUnique = [...new Set(input)].sort((a, b) => b - a)
+      const mx = sortedUnique[0]
+      const second = sortedUnique[1] ?? mx
+      return formatArray(input.map((v) => (v === mx ? second : v)))
+    },
+  },
+
+  {
+    name: 'Black Friday Sort',
+    description: 'Everything is 50% off! Every value is halved and rounded down.',
+    cannotBeInput: true,
+    validator: (input, output) =>
+      input.length === output.length && input.every((v, i) => output[i] === Math.floor(v / 2)),
+    expectedOutput: (input) => formatArray(input.map((v) => Math.floor(v / 2))),
+  },
+
+  {
+    name: 'Nepotism Sort',
+    description: 'The first three elements are replaced with the highest value in the array to give them a head start.',
+    cannotBeInput: (input) => {
+      if (input.length < 3) return false
+      const mx = Math.max(...input)
+      return input[0] !== mx || input[1] !== mx || input[2] !== mx
+    },
+    validator: (input, output) => {
+      const mx = Math.max(...input)
+      const expected = [...input]
+      for (let i = 0; i < Math.min(input.length, 3); i++) expected[i] = mx
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => {
+      const mx = Math.max(...input)
+      const res = [...input]
+      for (let i = 0; i < Math.min(input.length, 3); i++) res[i] = mx
+      return formatArray(res)
+    },
+  },
+
+  {
+    name: 'Bouncer Sort',
+    description: 'Only even numbers are on the list. Replace all odd numbers with 0.',
+    cannotBeInput: (input) => input.some((v) => v % 2 !== 0),
+    validator: (input, output) =>
+      input.every((v, i) => output[i] === (v % 2 === 0 ? v : 0)),
+    expectedOutput: (input) => formatArray(input.map((v) => (v % 2 === 0 ? v : 0))),
+  },
+
+  {
+    name: 'Tax Bracket Sort',
+    description: 'High earners pay more. If a value is > 70, subtract 20. If > 40, subtract 10.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      const calc = (v: number) => (v > 70 ? v - 20 : v > 40 ? v - 10 : v)
+      return input.every((v, i) => output[i] === calc(v))
+    },
+    expectedOutput: (input) =>
+      formatArray(input.map((v) => (v > 70 ? v - 20 : v > 40 ? v - 10 : v))),
+  },
+
+  {
+    name: 'One-Star Review Sort',
+    description: 'Total disappointment. Replace every single element with 1.',
+    cannotBeInput: (input) => input.some((v) => v !== 1),
+    validator: (_input, output) => output.every((v) => v === 1),
+    expectedOutput: (input) => formatArray(input.map(() => 1)),
+  },
+
+  {
+    name: 'Generational Wealth Sort',
+    description: 'Success compounds over time. Add (index * 10) to every element.',
+    cannotBeInput: true,
+    validator: (input, output) => input.every((v, i) => output[i] === v + i * 10),
+    expectedOutput: (input) => formatArray(input.map((v, i) => v + i * 10)),
+  },
+
+  {
+    name: 'Suburban Sprawl Sort',
+    description: 'Everything needs more space. Insert 1000 between every original element.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      if (input.length === 0) return output.length === 0
+      if (output.length !== input.length * 2 - 1) return false
+      return input.every((v, i) => output[i * 2] === v) && 
+             output.filter((_, i) => i % 2 !== 1000).every(v => v === 1000)
+    },
+    expectedOutput: (input) => {
+      const res: number[] = []
+      input.forEach((v, i) => {
+        res.push(v)
+        if (i < input.length - 1) res.push(1000)
+      })
+      return formatArray(res)
+    },
+  },
+
+  {
+    name: 'Early Bird Sort',
+    description: 'Values less than 20 cut to the front of the line. All others follow in original relative order.',
+    cannotBeInput: (input) => {
+      const firstNonEarly = input.findIndex(v => v >= 20)
+      if (firstNonEarly === -1) return false
+      return input.slice(firstNonEarly).some(v => v < 20)
+    },
+    validator: (input, output) => {
+      const early = input.filter((v) => v < 20)
+      const late = input.filter((v) => v >= 20)
+      return isSameArray([...early, ...late], output)
+    },
+    expectedOutput: (input) => {
+      const early = input.filter((v) => v < 20)
+      const late = input.filter((v) => v >= 20)
+      return formatArray([...early, ...late])
+    },
+  },
+
+  {
+    name: 'Last Call Sort',
+    description: 'It is closing time. Reverse the array and double every value.',
+    cannotBeInput: true,
+    validator: (input, output) => {
+      const expected = [...input].reverse().map((v) => v * 2)
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => formatArray([...input].reverse().map((v) => v * 2)),
+  },
+
+  {
+    name: 'Midlife Crisis Sort',
+    description: 'Trying to be something you are not. Replace every value $x$ with $(100 - x)$.',
+    cannotBeInput: true,
+    validator: (input, output) => input.every((v, i) => output[i] === 100 - v),
+    expectedOutput: (input) => formatArray(input.map((v) => 100 - v)),
+  },
+
+  {
+    name: 'Burnout Sort',
+    description: 'You have nothing left to give. Every element becomes the value of the element to its left; the first becomes 0.',
+    cannotBeInput: true,
+    validator: (input, output) =>
+      output[0] === 0 && input.slice(0, -1).every((v, i) => output[i + 1] === v),
+    expectedOutput: (input) =>
+      input.length === 0 ? '[]' : formatArray([0, ...input.slice(0, -1)]),
+  },
+
+  {
+    name: 'Global Warming Sort',
+    description: 'The temperature is rising. Every value in the array increases by 1.5.',
+    cannotBeInput: true,
+    validator: (input, output) =>
+      input.every((v, i) => Math.abs(output[i] - (v + 1.5)) < 1e-6),
+    expectedOutput: (input) => formatArray(input.map((v) => v + 1.5)),
   }
 
 ]
