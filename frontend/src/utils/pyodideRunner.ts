@@ -198,15 +198,18 @@ export async function runSillySort({
   try {
     const pyCode = pyodide.toPy(code)
     const pyInput = pyodide.toPy(input)
-    const globals = pyodide.toPy({ code: pyCode, input_arr: pyInput })
-    const proxy = await pyodide.runPythonAsync('run_user(code, input_arr)', { globals })
+    pyodide.globals.set("code", pyCode)
+    pyodide.globals.set("input_arr", pyInput)
+
+    const proxy = await pyodide.runPythonAsync(
+      "run_user(code, input_arr)"
+    )
 
     try {
       const js = proxy.toJs({ dict_converter: Object.fromEntries })
       return js as PyRunResult
     } finally {
       proxy.destroy?.()
-      globals.destroy?.()
       pyCode.destroy?.()
       pyInput.destroy?.()
     }
