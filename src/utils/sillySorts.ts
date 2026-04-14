@@ -984,7 +984,7 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Midlife Crisis Sort',
-    description: 'Trying to be something you are not. Replace every value $x$ with $(100 - x)$.',
+    description: 'Trying to be something you are not. Replace every value x with (100 - x).',
     cannotBeInput: true,
     validator: (input, output) => input.every((v, i) => output[i] === 100 - v),
     expectedOutput: (input) => formatArray(input.map((v) => 100 - v)),
@@ -1061,6 +1061,95 @@ export const SILLY_SORTS: SillySort[] = [
       return input.every((v, i) => output[i] === Math.round(v / 10) * 10);
     },
     expectedOutput: (input) => formatArray(input.map(v => Math.round(v / 10) * 10)),
+  },
+
+  {
+    name: 'Epstein Sort',
+    description: 'Sort the list in ascending order and then remove anything over 14.',
+    cannotBeInput: (input) => {
+      const expected = [...input]
+        .sort((a, b) => a - b)
+        .filter((v) => v <= 14);
+      return !isSameArray(input, expected);
+    },
+    validator: (input, output) => {
+      const expected = [...input]
+        .sort((a, b) => a - b)
+        .filter((v) => v <= 14);
+      return isSameArray(expected, output);
+    },
+    expectedOutput: (input) => {
+      const res = [...input]
+        .sort((a, b) => a - b)
+        .filter((v) => v <= 14);
+      return formatArray(res);
+    },
+  },
+
+  {
+    name: '9/11 Sort',
+    description: 'Remove the largest 2 numbers and sort the remaining elements in ascending order.',
+    cannotBeInput: (input) => {
+      if (input.length <= 2) return input.length > 0;
+      const sortedDesc = [...input].sort((a, b) => b - a);
+      const expected = sortedDesc.slice(2).sort((a, b) => a - b);
+      return !isSameArray(input, expected);
+    },
+    validator: (input, output) => {
+      if (input.length <= 2) return output.length === 0;
+      const sortedDesc = [...input].sort((a, b) => b - a);
+      const expected = sortedDesc.slice(2).sort((a, b) => a - b);
+      return isSameArray(expected, output);
+    },
+    expectedOutput: (input) => {
+      if (input.length <= 2) return '[]';
+      const sortedDesc = [...input].sort((a, b) => b - a);
+      const remaining = sortedDesc.slice(2).sort((a, b) => a - b);
+      return formatArray(remaining);
+    },
+  },
+
+  {
+    name: 'Anxiety Sort',
+    description: 'Sort the list in ascending order, then append the sorted list two more times just to be absolutely sure.',
+    cannotBeInput: (input) => {
+      const sorted = [...input].sort((a, b) => a - b);
+      const expected = [...sorted, ...sorted, ...sorted];
+      return !isSameArray(input, expected);
+    },
+    validator: (input, output) => {
+      const sorted = [...input].sort((a, b) => a - b);
+      const expected = [...sorted, ...sorted, ...sorted];
+      return isSameArray(expected, output);
+    },
+    expectedOutput: (input) => {
+      const sorted = [...input].sort((a, b) => a - b);
+      const tripleThreat = [...sorted, ...sorted, ...sorted];
+      return formatArray(tripleThreat);
+    },
+  },
+
+  {
+    name: 'Ragequit Sort',
+    description: 'Check if the list is sorted in ascending order. If it is not, ragequit and return an empty array.',
+    cannotBeInput: (input) => {
+      // If it's already sorted, there's no "ragequit" to perform.
+      // If it's already empty, there's nothing left to delete.
+      return isSortedAsc(input) && input.length > 0;
+    },
+    validator: (input, output) => {
+      if (isSortedAsc(input)) {
+        return isSameArray(input, output);
+      } else {
+        return output.length === 0;
+      }
+    },
+    expectedOutput: (input) => {
+      if (isSortedAsc(input)) {
+        return formatArray(input);
+      }
+      return '[]';
+    },
   },
 ]
 
