@@ -19,7 +19,7 @@ export default function FeedbackBanner({
   return (
     <div
       className={clsx(
-        'shadow-pop rounded-3xl border p-4 text-sm backdrop-blur-xl',
+        'shadow-pop break-words rounded-3xl border p-4 text-sm backdrop-blur-xl',
         kind === 'success'
           ? 'border-l-4 border-l-emerald-400'
           : kind === 'error'
@@ -29,7 +29,7 @@ export default function FeedbackBanner({
       )}
     >
       <div className="font-semibold">{title}</div>
-      {detail ? <div className="mt-1 opacity-90">{detail}</div> : null}
+      {detail ? <div className="mt-1 break-words opacity-90">{detail}</div> : null}
     </div>
   )
 }

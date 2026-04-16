@@ -11,12 +11,19 @@
   body,
   #root {
     height: 100%;
+    width: 100%;
+  }
+
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body {
     @apply bg-zinc-950 text-zinc-100 antialiased;
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
     font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
     background-image:
@@ -171,6 +178,15 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   .shadow-pop {

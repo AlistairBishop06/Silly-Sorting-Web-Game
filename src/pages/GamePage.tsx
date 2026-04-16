@@ -330,7 +330,7 @@ export default function GamePage() {
   const isBossLevel = gameStarted && isBossStageLevel(stageLevel, BOSS_LEVEL_EVERY)
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
       <TheaterCurtains />
 
       {!gameStarted ? <StartOverlay onStart={handleStartGame} /> : null}
@@ -360,15 +360,15 @@ export default function GamePage() {
 
       <main
         className={[
-          'relative z-10 mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 px-3 pb-[10.5rem] pt-2 sm:gap-5 sm:px-5 sm:pb-40 sm:pt-3 lg:overflow-hidden lg:pb-36',
+          'relative z-10 mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-hidden px-3 pb-[10.5rem] pt-2 sm:gap-5 sm:px-5 sm:pb-40 sm:pt-3 lg:pb-36',
           isBossLevel
             ? 'boss-arena-glow rounded-none ring-2 ring-rose-500/50 ring-offset-2 ring-offset-zinc-950 lg:rounded-xl'
             : '',
         ].join(' ')}
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-4 sm:gap-5 lg:flex-row lg:gap-6 lg:overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden sm:gap-5 lg:flex-row lg:gap-6">
         {/* Left: live chart column */}
-        <section className="flex min-h-[min(52vh,380px)] flex-1 flex-col gap-4 lg:min-h-0 lg:min-w-0 lg:flex-[1.05] lg:overflow-y-auto lg:pr-1">
+        <section className="no-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:min-w-0 lg:flex-[1.05] lg:pr-1">
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.75rem] border border-white/30 bg-gradient-to-br from-white/80 via-violet-50/50 to-fuchsia-100/60 p-[1px] shadow-[0_0_80px_-28px_rgba(139,92,246,0.55)] backdrop-blur-2xl dark:border-white/10 dark:from-zinc-950/95 dark:via-violet-950/50 dark:to-fuchsia-950/60 dark:shadow-[0_0_100px_-30px_rgba(168,85,247,0.35)]">
             <div className="flex h-full min-h-0 flex-col rounded-[1.7rem] bg-white/50 p-4 dark:bg-zinc-950/65 sm:p-5">
               <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
@@ -481,7 +481,7 @@ export default function GamePage() {
         </section>
 
         {/* Right: challenge + editor */}
-        <section className="flex min-h-[min(60vh,520px)] flex-1 flex-col gap-4 lg:min-h-0 lg:min-w-0 lg:flex-[1] lg:overflow-y-auto lg:overflow-x-hidden lg:pl-1">
+        <section className="no-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden lg:min-w-0 lg:flex-[1] lg:pl-1">
           <div
             className={[
               'relative shrink-0 overflow-hidden rounded-[1.75rem] border p-5 sm:p-6',
