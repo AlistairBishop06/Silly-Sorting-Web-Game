@@ -35,6 +35,25 @@ function isSortedAsc(arr: number[]) {
   return true
 }
 
+function isSortedDesc(arr: number[]) {
+  for (let i = 1; i < arr.length; i++) if (arr[i - 1] < arr[i]) return false
+  return true
+}
+
+function sortAsc(arr: number[]) {
+  return [...arr].sort((a, b) => a - b)
+}
+
+function sortDesc(arr: number[]) {
+  return [...arr].sort((a, b) => b - a)
+}
+
+function arraysAlmostEqual(a: number[], b: number[], tol: number) {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > tol) return false
+  return true
+}
+
 function average(arr: number[]) {
   if (arr.length === 0) return 0
   return arr.reduce((a, b) => a + b, 0) / arr.length
@@ -74,7 +93,7 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Communist Sort',
     description:
-      'Replace every element with the arithmetic mean of the input array. Output must be same length, all values identical.',
+      'Replace every element with the arithmetic mean of the input array, then sort ascending. Output must be same length, all values identical.',
     cannotBeInput: (input) => !input.every((v) => v === average(input)),
     validator: (input, output) => {
       const avg = average(input)
@@ -86,7 +105,7 @@ export const SILLY_SORTS: SillySort[] = [
     },
     expectedOutput: (input) => {
       const avg = average(input)
-      return formatArray(input.map(() => avg))
+      return formatArray(sortAsc(input.map(() => avg)))
     },
   },
 
@@ -123,28 +142,27 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Reverse Democracy Sort',
     description:
-      'Replace all occurrences of the most frequent value (mode) with 100. All other values remain unchanged.',
+      'Replace all occurrences of the most frequent value (mode) with 100, then sort descending. All other values remain unchanged.',
     cannotBeInput: (input) => {
       const m = mode(input)
-      const expected = input.map((v) => (v === m ? 100 : v))
+      const expected = sortDesc(input.map((v) => (v === m ? 100 : v)))
       return !isSameArray(input, expected)
     },
     validator: (input, output) => {
       const m = mode(input)
-      return input.every((v, i) =>
-        v === m ? output[i] === 100 : output[i] === v
-      )
+      const expected = sortDesc(input.map((v) => (v === m ? 100 : v)))
+      return isSameArray(expected, output)
     },
     expectedOutput: (input) => {
       const m = mode(input)
-      return formatArray(input.map((v) => (v === m ? 100 : v)))
+      return formatArray(sortDesc(input.map((v) => (v === m ? 100 : v))))
     },
   },
 
   {
     name: 'Centrist Sort',
     description:
-      'Replace every element with the median value of the array. All output values must be identical.',
+      'Replace every element with the median value of the array, then sort ascending. All output values must be identical.',
     cannotBeInput: (input) => !input.every((v) => v === median(input)),
     validator: (input, output) => {
       const med = median(input)
@@ -152,7 +170,7 @@ export const SILLY_SORTS: SillySort[] = [
     },
     expectedOutput: (input) => {
       const med = median(input)
-      return formatArray(input.map(() => med))
+      return formatArray(sortAsc(input.map(() => med)))
     },
   },
 
@@ -226,15 +244,15 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Main Character Sort',
     description:
-      'Choose one value from the input. Replace every element with that chosen value.',
+      'Choose one value from the input. Replace every element with that chosen value, then sort descending.',
     cannotBeInput: (input) => input.length > 0 && input.some((v) => v !== input[0]),
     validator: (input, output) => {
       if (input.length !== output.length) return false
-      return new Set(input).has(output[0]) && output.every((v) => v === output[0])
+      return new Set(input).has(output[0]) && output.every((v) => v === output[0]) && isSortedDesc(output)
     },
     expectedOutput: (input) => {
       const v = input[0] ?? 0
-      return formatArray(input.map(() => v))
+      return formatArray(sortDesc(input.map(() => v)))
     },
   },
 
@@ -249,7 +267,7 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Therapy Sort',
     description:
-      'Move each element halfway toward the mean of the array.',
+      'Move each element halfway toward the mean of the array, then sort ascending.',
     cannotBeInput: (input) => {
       const avg = average(input)
       const tol = 1e-9
@@ -257,13 +275,12 @@ export const SILLY_SORTS: SillySort[] = [
     },
     validator: (input, output) => {
       const avg = average(input)
-      return input.every((v, i) =>
-        Math.abs(output[i] - (v + avg) / 2) < 1e-6
-      )
+      const expected = sortAsc(input.map((v) => (v + avg) / 2))
+      return arraysAlmostEqual(expected, output, 1e-6)
     },
     expectedOutput: (input) => {
       const avg = average(input)
-      return formatArray(input.map((v) => (v + avg) / 2))
+      return formatArray(sortAsc(input.map((v) => (v + avg) / 2)))
     },
   },
 
@@ -279,7 +296,7 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Narcissist Sort',
     description:
-      'Replace all elements with the maximum value in the array.',
+      'Replace all elements with the maximum value in the array, then sort descending.',
     cannotBeInput: (input) => {
       if (input.length === 0) return false
       const mx = Math.max(...input)
@@ -287,11 +304,11 @@ export const SILLY_SORTS: SillySort[] = [
     },
     validator: (input, output) => {
       const mx = Math.max(...input)
-      return output.every((v) => v === mx)
+      return output.every((v) => v === mx) && isSortedDesc(output)
     },
     expectedOutput: (input) => {
       const mx = Math.max(...input)
-      return formatArray(input.map(() => mx))
+      return formatArray(sortDesc(input.map(() => mx)))
     },
   },
 
@@ -378,27 +395,27 @@ export const SILLY_SORTS: SillySort[] = [
   {
     name: 'Existential Sort',
     description:
-      'Replace every element with 0.',
+      'Replace every element with 0, then sort ascending.',
     cannotBeInput: (input) => input.some((v) => v !== 0),
     validator: (_input, output) => output.every((v) => v === 0),
-    expectedOutput: (input) => formatArray(input.map(() => 0)),
+    expectedOutput: (input) => formatArray(sortAsc(input.map(() => 0))),
   },
 
   {
     name: 'Influencer Sort',
     description:
-      'Replace every element with the first element of the array.',
+      'Replace every element with the first element of the array, then sort descending.',
     cannotBeInput: (input) => input.length > 0 && input.some((v) => v !== input[0]),
     validator: (input, output) =>
-      output.every((v) => v === input[0]),
+      output.every((v) => v === input[0]) && isSortedDesc(output),
     expectedOutput: (input) =>
-      formatArray(input.map(() => input[0] ?? 0)),
+      formatArray(sortDesc(input.map(() => input[0] ?? 0))),
   },
 
   {
     name: 'Middle Child Sort',
     description:
-      'Ensure the middle element matches the median value.',
+      'Ensure the middle element matches the median value, then sort ascending.',
     cannotBeInput: (input) => {
       if (input.length === 0) return false
       const sorted = [...input].sort((a, b) => a - b)
@@ -408,14 +425,16 @@ export const SILLY_SORTS: SillySort[] = [
     validator: (input, output) => {
       const sorted = [...input].sort((a, b) => a - b)
       const mid = Math.floor(sorted.length / 2)
-      return output[mid] === sorted[mid]
+      const out = [...input]
+      out[mid] = sorted[mid]
+      return isSameArray(sortAsc(out), output)
     },
     expectedOutput: (input) => {
       const sorted = [...input].sort((a, b) => a - b)
       const mid = Math.floor(sorted.length / 2)
       const out = [...input]
       out[mid] = sorted[mid]
-      return formatArray(out)
+      return formatArray(sortAsc(out))
     },
   },
 
@@ -646,16 +665,18 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Inflation Sort',
-    description: 'Every value increases by 1 to account for economic shifts.',
+    description: 'Every value increases by 1 to account for economic shifts, then sort descending.',
     cannotBeInput: true,
-    validator: (input, output) =>
-      input.length === output.length && input.every((v, i) => output[i] === v + 1),
-    expectedOutput: (input) => formatArray(input.map((v) => v + 1)),
+    validator: (input, output) => {
+      const expected = sortDesc(input.map((v) => v + 1))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => formatArray(sortDesc(input.map((v) => v + 1))),
   },
 
   {
     name: 'Pessimist Sort',
-    description: 'Replace every element with the minimum value of the array.',
+    description: 'Replace every element with the minimum value of the array, then sort ascending.',
     cannotBeInput: (input) => {
       if (input.length === 0) return false
       const mn = Math.min(...input)
@@ -663,11 +684,12 @@ export const SILLY_SORTS: SillySort[] = [
     },
     validator: (input, output) => {
       const mn = Math.min(...input)
-      return output.length === input.length && output.every((v) => v === mn)
+      const expected = sortAsc(input.map(() => mn))
+      return isSameArray(expected, output)
     },
     expectedOutput: (input) => {
       const mn = Math.min(...input)
-      return formatArray(input.map(() => mn))
+      return formatArray(sortAsc(input.map(() => mn)))
     },
   },
 
@@ -688,7 +710,7 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Deja Vu Sort',
-    description: 'Replace the second half of the array with a exact copy of the first half.',
+    description: 'Replace the second half of the array with a exact copy of the first half, then sort descending.',
     cannotBeInput: (input) => {
       const half = Math.floor(input.length / 2)
       const first = input.slice(0, half)
@@ -697,9 +719,13 @@ export const SILLY_SORTS: SillySort[] = [
     },
     validator: (input, output) => {
       const half = Math.floor(input.length / 2)
-      const firstHalf = output.slice(0, half)
-      const secondHalf = output.slice(output.length - half)
-      return isSameArray(firstHalf, secondHalf) && output.length === input.length
+      const first = input.slice(0, half)
+      const result = [...input]
+      for (let i = 0; i < half; i++) {
+        result[input.length - half + i] = first[i]
+      }
+      const expected = sortDesc(result)
+      return isSameArray(expected, output)
     },
     expectedOutput: (input) => {
       const half = Math.floor(input.length / 2)
@@ -708,7 +734,7 @@ export const SILLY_SORTS: SillySort[] = [
       for (let i = 0; i < half; i++) {
         result[input.length - half + i] = first[i]
       }
-      return formatArray(result)
+      return formatArray(sortDesc(result))
     },
   },
 
@@ -726,12 +752,15 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Clickbait Sort',
-    description: 'The first element is replaced with 999,999 to grab attention. The rest remain unchanged.',
+    description: 'The first element is replaced with 999,999 to grab attention, then sort ascending. The rest remain unchanged.',
     cannotBeInput: (input) => input.length > 0 && input[0] !== 999999,
-    validator: (input, output) =>
-      output.length === input.length && output[0] === 999999 && isSameArray(input.slice(1), output.slice(1)),
+    validator: (input, output) => {
+      if (input.length === 0) return output.length === 0
+      const expected = sortAsc([999999, ...input.slice(1)])
+      return isSameArray(expected, output)
+    },
     expectedOutput: (input) =>
-      input.length === 0 ? '[]' : formatArray([999999, ...input.slice(1)]),
+      input.length === 0 ? '[]' : formatArray(sortAsc([999999, ...input.slice(1)])),
   },
 
   {
@@ -784,48 +813,50 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Ancestry Sort',
-    description: 'Each element becomes the sum of itself and all previous elements (Prefix Sum).',
-    cannotBeInput: (input) => {
-        if (input.length <= 1) return false;
-        return input[1] !== (input[0] + input[1]); // Simple check for first transition
-    },
+    description: 'Each element becomes the sum of itself and all previous elements (Prefix Sum), then sort descending.',
+    cannotBeInput: true,
     validator: (input, output) => {
       let sum = 0
-      return input.every((v, i) => {
-        sum += v
-        return output[i] === sum
-      })
+      const modified = input.map((v) => (sum += v))
+      const expected = sortDesc(modified)
+      return isSameArray(expected, output)
     },
     expectedOutput: (input) => {
       let sum = 0
-      return formatArray(input.map((v) => (sum += v)))
+      return formatArray(sortDesc(input.map((v) => (sum += v))))
     },
   },
 
   {
     name: 'Privacy Sort',
-    description: 'Redact all information. Replace every element with -1.',
+    description: 'Redact all information. Replace every element with -1, then sort ascending.',
     cannotBeInput: (input) => input.some((v) => v !== -1),
-    validator: (_input, output) => output.every((v) => v === -1),
-    expectedOutput: (input) => formatArray(input.map(() => -1)),
+    validator: (input, output) => {
+      const expected = sortAsc(input.map(() => -1))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => formatArray(sortAsc(input.map(() => -1))),
   },
 
   {
     name: 'Speed Limit Sort',
-    description: 'Any value exceeding 70 is "pulled over" and reduced to 70.',
+    description: 'Any value exceeding 70 is "pulled over" and reduced to 70, then sort descending.',
     cannotBeInput: (input) => input.some((v) => v > 70),
-    validator: (input, output) =>
-      input.every((v, i) => output[i] === (v > 70 ? 70 : v)),
-    expectedOutput: (input) => formatArray(input.map((v) => (v > 70 ? 70 : v))),
+    validator: (input, output) => {
+      const expected = sortDesc(input.map((v) => (v > 70 ? 70 : v)))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) =>
+      formatArray(sortDesc(input.map((v) => (v > 70 ? 70 : v)))),
   },
 
   {
     name: 'Small Talk Sort',
-    description: 'The values are irrelevant. Replace every element with its index in the array.',
+    description: 'The values are irrelevant. Replace every element with its index in the array, then sort ascending.',
     cannotBeInput: (input) => input.some((v, i) => v !== i),
     validator: (input, output) =>
-      output.length === input.length && output.every((v, i) => v === i),
-    expectedOutput: (input) => formatArray(input.map((_, i) => i)),
+      isSameArray(sortAsc(input.map((_, i) => i)), output),
+    expectedOutput: (input) => formatArray(sortAsc(input.map((_, i) => i))),
   },
 
   {
@@ -841,7 +872,7 @@ export const SILLY_SORTS: SillySort[] = [
 
   {
     name: 'Tall Poppy Sort',
-    description: 'The highest value is cut down. Replace the maximum value with the second-highest value in the array.',
+    description: 'The highest value is cut down. Replace the maximum value with the second-highest value in the array, then sort descending.',
     cannotBeInput: (input) => {
       if (input.length < 2) return false
       const mx = Math.max(...input)
@@ -852,29 +883,32 @@ export const SILLY_SORTS: SillySort[] = [
       const sortedUnique = [...new Set(input)].sort((a, b) => b - a)
       const mx = sortedUnique[0]
       const second = sortedUnique[1] ?? mx
-      const expected = input.map((v) => (v === mx ? second : v))
+      const expected = sortDesc(input.map((v) => (v === mx ? second : v)))
       return isSameArray(expected, output)
     },
     expectedOutput: (input) => {
       const sortedUnique = [...new Set(input)].sort((a, b) => b - a)
       const mx = sortedUnique[0]
       const second = sortedUnique[1] ?? mx
-      return formatArray(input.map((v) => (v === mx ? second : v)))
+      return formatArray(sortDesc(input.map((v) => (v === mx ? second : v))))
     },
   },
 
   {
     name: 'Black Friday Sort',
-    description: 'Everything is 50% off! Every value is halved and rounded down.',
+    description: 'Everything is 50% off! Every value is halved and rounded down, then sort ascending.',
     cannotBeInput: true,
-    validator: (input, output) =>
-      input.length === output.length && input.every((v, i) => output[i] === Math.floor(v / 2)),
-    expectedOutput: (input) => formatArray(input.map((v) => Math.floor(v / 2))),
+    validator: (input, output) => {
+      const expected = sortAsc(input.map((v) => Math.floor(v / 2)))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) =>
+      formatArray(sortAsc(input.map((v) => Math.floor(v / 2)))),
   },
 
   {
     name: 'Nepotism Sort',
-    description: 'The first three elements are replaced with the highest value in the array to give them a head start.',
+    description: 'The first three elements are replaced with the highest value in the array to give them a head start, then sort descending.',
     cannotBeInput: (input) => {
       if (input.length < 3) return false
       const mx = Math.max(...input)
@@ -884,51 +918,62 @@ export const SILLY_SORTS: SillySort[] = [
       const mx = Math.max(...input)
       const expected = [...input]
       for (let i = 0; i < Math.min(input.length, 3); i++) expected[i] = mx
-      return isSameArray(expected, output)
+      return isSameArray(sortDesc(expected), output)
     },
     expectedOutput: (input) => {
       const mx = Math.max(...input)
       const res = [...input]
       for (let i = 0; i < Math.min(input.length, 3); i++) res[i] = mx
-      return formatArray(res)
+      return formatArray(sortDesc(res))
     },
   },
 
   {
     name: 'Bouncer Sort',
-    description: 'Only even numbers are on the list. Replace all odd numbers with 0.',
+    description: 'Only even numbers are on the list. Replace all odd numbers with 0, then sort ascending.',
     cannotBeInput: (input) => input.some((v) => v % 2 !== 0),
-    validator: (input, output) =>
-      input.every((v, i) => output[i] === (v % 2 === 0 ? v : 0)),
-    expectedOutput: (input) => formatArray(input.map((v) => (v % 2 === 0 ? v : 0))),
+    validator: (input, output) => {
+      const expected = sortAsc(input.map((v) => (v % 2 === 0 ? v : 0)))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) =>
+      formatArray(sortAsc(input.map((v) => (v % 2 === 0 ? v : 0)))),
   },
 
   {
     name: 'Tax Bracket Sort',
-    description: 'High earners pay more. If a value is > 70, subtract 20. If > 40, subtract 10.',
+    description: 'High earners pay more. If a value is > 70, subtract 20. If > 40, subtract 10, then sort descending.',
     cannotBeInput: true,
     validator: (input, output) => {
       const calc = (v: number) => (v > 70 ? v - 20 : v > 40 ? v - 10 : v)
-      return input.every((v, i) => output[i] === calc(v))
+      const expected = sortDesc(input.map(calc))
+      return isSameArray(expected, output)
     },
     expectedOutput: (input) =>
-      formatArray(input.map((v) => (v > 70 ? v - 20 : v > 40 ? v - 10 : v))),
+      formatArray(sortDesc(input.map((v) => (v > 70 ? v - 20 : v > 40 ? v - 10 : v)))),
   },
 
   {
     name: 'One-Star Review Sort',
-    description: 'Total disappointment. Replace every single element with 1.',
+    description: 'Total disappointment. Replace every single element with 1, then sort ascending.',
     cannotBeInput: (input) => input.some((v) => v !== 1),
-    validator: (_input, output) => output.every((v) => v === 1),
-    expectedOutput: (input) => formatArray(input.map(() => 1)),
+    validator: (input, output) => {
+      const expected = sortAsc(input.map(() => 1))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) => formatArray(sortAsc(input.map(() => 1))),
   },
 
   {
     name: 'Generational Wealth Sort',
-    description: 'Success compounds over time. Add (index * 10) to every element.',
+    description: 'Success compounds over time. Add (index * 10) to every element, then sort descending.',
     cannotBeInput: true,
-    validator: (input, output) => input.every((v, i) => output[i] === v + i * 10),
-    expectedOutput: (input) => formatArray(input.map((v, i) => v + i * 10)),
+    validator: (input, output) => {
+      const expected = sortDesc(input.map((v, i) => v + i * 10))
+      return isSameArray(expected, output)
+    },
+    expectedOutput: (input) =>
+      formatArray(sortDesc(input.map((v, i) => v + i * 10))),
   },
 
   {
