@@ -29,7 +29,7 @@ type RunState =
 
 const ROUND_SECONDS = 300
 const HIDDEN_TESTS = 3
-const TOTAL_LEVELS = 16
+const LEVEL_CHUNK_SIZE = 16
 
 export default function GamePage() {
   const [sort, setSort] = useState<SillySort>(() => getRandomSillySort())
@@ -54,6 +54,7 @@ export default function GamePage() {
 
   const [gameStarted, setGameStarted] = useState(false)
   const [stageLevel, setStageLevel] = useState(1)
+  const [levelPathSeed, setLevelPathSeed] = useState(1)
 
   const [roundEndsAt, setRoundEndsAt] = useState(() => Date.now() + ROUND_SECONDS * 1000)
   const [now, setNow] = useState(() => Date.now())
@@ -81,6 +82,7 @@ export default function GamePage() {
     setStageLevel(1)
     setSort(pickSortForStage(1))
     setRoundEndsAt(Date.now() + ROUND_SECONDS * 1000)
+    setLevelPathSeed(Math.floor(Math.random() * 2 ** 31))
   }
 
   const activeArray = useMemo(() => {
@@ -290,7 +292,7 @@ export default function GamePage() {
   }
 
   function nextChallenge() {
-    const nextLevel = stageLevel >= TOTAL_LEVELS ? 1 : stageLevel + 1
+    const nextLevel = stageLevel + 1
     const next = generateNumbers(10)
     setStageLevel(nextLevel)
     setSort(pickSortForStage(nextLevel))
@@ -620,8 +622,9 @@ export default function GamePage() {
       {gameStarted ? (
         <LevelProgressMeter
           currentLevel={stageLevel}
-          totalLevels={TOTAL_LEVELS}
           bossEvery={BOSS_LEVEL_EVERY}
+          chunkSize={LEVEL_CHUNK_SIZE}
+          seed={levelPathSeed}
         />
       ) : null}
     </div>

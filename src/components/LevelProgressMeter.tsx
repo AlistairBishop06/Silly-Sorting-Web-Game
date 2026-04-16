@@ -1,21 +1,92 @@
+import { useMemo } from 'react'
 import { BOSS_LEVEL_EVERY, isBossStageLevel } from '../utils/sillySorts'
 
-const WAVE = 10
+const STEP_Y = 6
+
+function mulberry32(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function generateChunkYs({
+  seed,
+  chunkIndex,
+  chunkSize,
+  startY,
+  minY = -2,
+  maxY = 2,
+}: {
+  seed: number
+  chunkIndex: number
+  chunkSize: number
+  startY: number
+  minY?: number
+  maxY?: number
+}) {
+  const rng = mulberry32((seed ^ (chunkIndex * 0x9e3779b9)) >>> 0)
+  const ys: number[] = new Array(chunkSize)
+  let y = startY
+  for (let i = 0; i < chunkSize; i++) {
+    const r = rng()
+    const delta = r < 0.25 ? -1 : r < 0.75 ? 0 : 1
+    y = Math.max(minY, Math.min(maxY, y + delta))
+    ys[i] = y
+  }
+  return { ys, endY: y }
+}
 
 export default function LevelProgressMeter({
   currentLevel,
-  totalLevels,
   bossEvery = BOSS_LEVEL_EVERY,
+  chunkSize = 16,
+  seed,
 }: {
   currentLevel: number
-  totalLevels: number
   bossEvery?: number
+  chunkSize?: number
+  seed: number
 }) {
-  const safeTotal = Math.max(1, totalLevels)
-  const clamped = Math.min(Math.max(1, currentLevel), safeTotal)
+  const safeChunk = Math.max(1, Math.floor(chunkSize))
+  const clamped = Math.max(1, Math.floor(currentLevel))
   const onBoss = isBossStageLevel(clamped, bossEvery)
+
+  const chunkIndex = Math.floor((clamped - 1) / safeChunk)
+  const chunkStart = chunkIndex * safeChunk + 1
+  const chunkEnd = chunkStart + safeChunk - 1
+  const nextChunkStart = chunkEnd + 1
+
+  const { startY, chunkYs } = useMemo(() => {
+    // Walk forward chunk-by-chunk to keep the vertical path continuous.
+    let curStartY = 0
+    for (let i = 0; i < chunkIndex; i++) {
+      const prev = generateChunkYs({
+        seed,
+        chunkIndex: i,
+        chunkSize: safeChunk,
+        startY: curStartY,
+      })
+      curStartY = prev.endY
+    }
+    const ys = generateChunkYs({
+      seed,
+      chunkIndex,
+      chunkSize: safeChunk,
+      startY: curStartY,
+    }).ys
+    return { startY: curStartY, chunkYs: ys }
+  }, [chunkIndex, safeChunk, seed])
+
+  const visibleLevels: number[] = chunkIndex > 0 ? [chunkStart - 1] : []
+  for (let i = 0; i < safeChunk; i++) visibleLevels.push(chunkStart + i)
+
   const rawNextBoss = Math.ceil((clamped + 1) / bossEvery) * bossEvery
-  const nextBossMarker = rawNextBoss <= safeTotal ? rawNextBoss : bossEvery
+  const nextBossMarker = rawNextBoss
 
   return (
     <div
@@ -64,20 +135,20 @@ export default function LevelProgressMeter({
             <div
               className="pointer-events-none absolute left-0 top-[calc(50%-10px)] h-0.5 -translate-y-1/2 rounded-full bg-teal-500/80 transition-all duration-500"
               style={{
-                width:
-                  safeTotal <= 1
-                    ? '0%'
-                    : `${(Math.max(0, clamped - 1) / Math.max(1, safeTotal - 1)) * 100}%`,
+                width: `${(Math.max(0, clamped - chunkStart) / Math.max(1, safeChunk - 1)) * 100}%`,
               }}
             />
 
             <div className="relative flex w-full items-start">
-              {Array.from({ length: safeTotal }, (_, i) => {
-                const n = i + 1
-                const done = n < clamped
-                const current = n === clamped
-                const isBossNode = isBossStageLevel(n, bossEvery)
-                const waveY = Math.sin(i * 0.65) * WAVE
+              {visibleLevels.map((level) => {
+                const done = level < clamped
+                const current = level === clamped
+                const isBossNode = isBossStageLevel(level, bossEvery)
+
+                const y =
+                  level === chunkStart - 1
+                    ? startY * STEP_Y
+                    : chunkYs[Math.max(0, level - chunkStart)]! * STEP_Y
 
                 const bossDoneClasses =
                   'h-7 w-7 border-rose-400 bg-gradient-to-br from-rose-600 to-amber-700 text-[8px] text-white shadow-md shadow-rose-500/30 sm:h-8 sm:w-8 sm:text-[9px]'
@@ -95,7 +166,10 @@ export default function LevelProgressMeter({
 
                 let dotClass =
                   'flex items-center justify-center rounded-full border-2 font-bold tabular-nums transition-all duration-300'
-                if (isBossNode) {
+                if (level === chunkStart - 1) {
+                  dotClass +=
+                    ' h-4 w-4 border-zinc-700/70 bg-zinc-950/40 text-[0px] text-transparent opacity-60 sm:h-5 sm:w-5'
+                } else if (isBossNode) {
                   if (done) dotClass += ` ${bossDoneClasses}`
                   else if (current) dotClass += ` ${bossCurrentClasses}`
                   else dotClass += ` ${bossFutureClasses}`
@@ -107,12 +181,27 @@ export default function LevelProgressMeter({
 
                 return (
                   <div
-                    key={n}
+                    key={level}
                     className="flex min-w-0 flex-1 flex-col items-center"
-                    style={{ transform: `translateY(${waveY}px)` }}
+                    style={{ transform: `translateY(${y}px)` }}
                   >
-                    <div className={dotClass} title={isBossNode ? `Boss — level ${n}` : `Level ${n}`}>
-                      {isBossNode ? '👹' : done || current ? n : ''}
+                    <div
+                      className={dotClass}
+                      title={
+                        level === chunkStart - 1
+                          ? `Previous chunk — level ${level}`
+                          : isBossNode
+                            ? `Boss — level ${level}`
+                            : `Level ${level}`
+                      }
+                    >
+                      {level === chunkStart - 1
+                        ? ''
+                        : isBossNode
+                          ? '👹'
+                          : done || current
+                            ? level
+                            : ''}
                     </div>
                     {current ? (
                       <span
@@ -134,7 +223,7 @@ export default function LevelProgressMeter({
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-900/60 bg-gradient-to-br from-amber-900 to-rose-950 text-lg shadow-inner"
             title="Final gauntlet"
           >
-            👹
+            ➡️
           </div>
         </div>
 
@@ -149,17 +238,16 @@ export default function LevelProgressMeter({
           {onBoss ? (
             <span className="text-rose-300">Boss level</span>
           ) : (
-            <span>
-              Level {clamped} / {safeTotal}
-            </span>
+            <span>Level {clamped}</span>
           )}
           {!onBoss ? (
             <span className="mt-0.5 block text-[9px] font-semibold normal-case tracking-normal text-amber-200/70">
-              Boss every {bossEvery} · next @ level {nextBossMarker}
+              Chunk {chunkIndex + 1} ({chunkStart}–{chunkEnd}) · next chunk @ level {nextChunkStart} · next boss
+              @ level {nextBossMarker}
             </span>
           ) : (
             <span className="mt-0.5 block text-[9px] font-semibold normal-case tracking-normal text-rose-200/80">
-              Level {clamped} / {safeTotal} — harder rule pool
+              Chunk {chunkIndex + 1} ({chunkStart}–{chunkEnd}) — harder rule pool
             </span>
           )}
         </div>
