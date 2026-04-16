@@ -1,18 +1,9 @@
 import { useMemo } from 'react'
 import { BOSS_LEVEL_EVERY, isBossStageLevel } from '../utils/sillySorts'
+import { MUTATOR_LEVEL_EVERY, isMutatorStageLevel } from '../utils/stages'
+import { mulberry32 } from '../utils/prng'
 
 const STEP_Y = 6
-
-function mulberry32(seed: number) {
-  let a = seed >>> 0
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 function generateChunkYs({
   seed,
@@ -44,17 +35,20 @@ function generateChunkYs({
 export default function LevelProgressMeter({
   currentLevel,
   bossEvery = BOSS_LEVEL_EVERY,
+  mutatorEvery = MUTATOR_LEVEL_EVERY,
   chunkSize = 16,
   seed,
 }: {
   currentLevel: number
   bossEvery?: number
+  mutatorEvery?: number
   chunkSize?: number
   seed: number
 }) {
   const safeChunk = Math.max(1, Math.floor(chunkSize))
   const clamped = Math.max(1, Math.floor(currentLevel))
   const onBoss = isBossStageLevel(clamped, bossEvery)
+  const onMutator = isMutatorStageLevel(clamped, mutatorEvery, bossEvery)
 
   const chunkIndex = Math.floor((clamped - 1) / safeChunk)
   const chunkStart = chunkIndex * safeChunk + 1
@@ -98,7 +92,9 @@ export default function LevelProgressMeter({
           'relative w-full max-w-3xl overflow-hidden rounded-2xl border shadow-[0_-8px_40px_rgba(0,0,0,0.12)]',
           onBoss
             ? 'border-rose-500/50 bg-gradient-to-b from-rose-950/90 via-zinc-950/95 to-rose-950/90 shadow-[0_-12px_48px_rgba(244,63,94,0.2)]'
-            : 'border-amber-900/25 bg-gradient-to-b from-amber-950/40 via-amber-950/30 to-rose-950/35',
+            : onMutator
+              ? 'border-emerald-400/50 bg-gradient-to-b from-emerald-950/70 via-zinc-950/90 to-emerald-950/70 shadow-[0_-12px_48px_rgba(16,185,129,0.18)]'
+              : 'border-amber-900/25 bg-gradient-to-b from-amber-950/40 via-amber-950/30 to-rose-950/35',
         ].join(' ')}
       >
         <div
@@ -144,6 +140,7 @@ export default function LevelProgressMeter({
                 const done = level < clamped
                 const current = level === clamped
                 const isBossNode = isBossStageLevel(level, bossEvery)
+                const isMutatorNode = isMutatorStageLevel(level, mutatorEvery, bossEvery)
 
                 const y =
                   level === chunkStart - 1
@@ -164,6 +161,13 @@ export default function LevelProgressMeter({
                 const normalFutureClasses =
                   'h-4 w-4 border-amber-800/60 bg-amber-950/40 text-[0px] text-transparent sm:h-5 sm:w-5'
 
+                const mutatorDoneClasses =
+                  'h-6 w-6 border-emerald-300 bg-emerald-500 text-[9px] text-emerald-950 shadow-sm shadow-emerald-500/15 sm:h-7 sm:w-7 sm:text-[10px]'
+                const mutatorCurrentClasses =
+                  'h-8 w-8 border-2 border-emerald-200 bg-gradient-to-b from-emerald-300 to-emerald-500 text-[10px] text-emerald-950 shadow-[0_0_20px_rgba(16,185,129,0.5)] ring-2 ring-emerald-400/40 sm:h-9 sm:w-9 sm:text-xs'
+                const mutatorFutureClasses =
+                  'h-4 w-4 border-emerald-700/60 bg-emerald-950/35 text-[0px] text-transparent sm:h-5 sm:w-5'
+
                 let dotClass =
                   'flex items-center justify-center rounded-full border-2 font-bold tabular-nums transition-all duration-300'
                 if (level === chunkStart - 1) {
@@ -173,6 +177,10 @@ export default function LevelProgressMeter({
                   if (done) dotClass += ` ${bossDoneClasses}`
                   else if (current) dotClass += ` ${bossCurrentClasses}`
                   else dotClass += ` ${bossFutureClasses}`
+                } else if (isMutatorNode) {
+                  if (done) dotClass += ` ${mutatorDoneClasses}`
+                  else if (current) dotClass += ` ${mutatorCurrentClasses}`
+                  else dotClass += ` ${mutatorFutureClasses}`
                 } else {
                   if (done) dotClass += ` ${normalDoneClasses}`
                   else if (current) dotClass += ` ${normalCurrentClasses}`
@@ -199,6 +207,10 @@ export default function LevelProgressMeter({
                         ? ''
                         : isBossNode
                           ? '👹'
+                          : isMutatorNode
+                            ? current
+                              ? '🧬'
+                              : ''
                           : done || current
                             ? level
                             : ''}
@@ -237,11 +249,18 @@ export default function LevelProgressMeter({
         >
           {onBoss ? (
             <span className="text-rose-300">Boss level</span>
+          ) : onMutator ? (
+            <span className="text-emerald-300">Mutator stage</span>
           ) : (
             <span>Level {clamped}</span>
           )}
           {!onBoss ? (
-            <span className="mt-0.5 block text-[9px] font-semibold normal-case tracking-normal text-amber-200/70">
+            <span
+              className={[
+                'mt-0.5 block text-[9px] font-semibold normal-case tracking-normal',
+                onMutator ? 'text-emerald-200/75' : 'text-amber-200/70',
+              ].join(' ')}
+            >
               Chunk {chunkIndex + 1} ({chunkStart}–{chunkEnd}) · next chunk @ level {nextChunkStart} · next boss
               @ level {nextBossMarker}
             </span>

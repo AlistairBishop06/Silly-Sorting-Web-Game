@@ -139,6 +139,34 @@
   );
 }
 
+@keyframes mutatorBorderPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.22),
+      0 0 44px -12px rgba(16, 185, 129, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.42),
+      0 0 60px -10px rgba(16, 185, 129, 0.42);
+  }
+}
+
+.mutator-arena-glow {
+  animation: mutatorBorderPulse 3.2s ease-in-out infinite;
+}
+
+.mutator-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(16, 185, 129, 0.035) 3px,
+    rgba(16, 185, 129, 0.035) 6px
+  );
+}
+
 @keyframes confettiFall {
   0% {
     transform: translate3d(0, -40px, 0) rotate(0deg);

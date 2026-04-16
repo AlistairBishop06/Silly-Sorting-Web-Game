@@ -4,6 +4,8 @@ export type SillySort = {
   // Important implementation detail: each challenge is a simple object with a validator.
   validator: (input: number[], output: number[]) => boolean
   expectedOutput: (input: number[]) => string
+  /** Optional preprocessing for the input (used by mutator stages). */
+  inputTransform?: (input: number[]) => number[]
   // When true, returning the input unchanged does NOT count as a solution.
   // When a function, it can decide per-input (so we don't reject "already satisfies the rule" edge cases).
   cannotBeInput?: boolean | ((input: number[]) => boolean)
@@ -1437,13 +1439,22 @@ export function getRandomSillySort(): SillySort {
 
 export function validateSillySort(sort: SillySort, input: number[], output: number[]) {
   try {
+    const effectiveInput = sort.inputTransform ? sort.inputTransform(input) : input
     const forbidUnchanged =
       typeof sort.cannotBeInput === 'function'
-        ? sort.cannotBeInput(input)
+        ? sort.cannotBeInput(effectiveInput)
         : sort.cannotBeInput
-    if (forbidUnchanged && isSameArray(input, output)) return false
-    return sort.validator(input, output)
+    if (forbidUnchanged && isSameArray(effectiveInput, output)) return false
+    return sort.validator(effectiveInput, output)
   } catch {
     return false
   }
+}
+
+export function getEffectiveInput(sort: SillySort, input: number[]) {
+  return sort.inputTransform ? sort.inputTransform(input) : input
+}
+
+export function expectedOutputForSort(sort: SillySort, input: number[]) {
+  return sort.expectedOutput(getEffectiveInput(sort, input))
 }

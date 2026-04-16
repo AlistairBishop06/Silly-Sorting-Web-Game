@@ -13,13 +13,19 @@ import { defaultStarterCode } from '../utils/starterCode'
 import { runSillySort } from '../utils/pyodideRunner'
 import {
   BOSS_LEVEL_EVERY,
+  SILLY_SORTS,
   getRandomSillySort,
   isBossStageLevel,
   pickSortForStage,
+  expectedOutputForSort,
+  getEffectiveInput,
   validateSillySort,
   type SillySort,
 } from '../utils/sillySorts'
 import { generateNumbers } from '../utils/random'
+import { mulberry32 } from '../utils/prng'
+import { applyMutatorToSort, pickMutatorForLevel, type InputMutator } from '../utils/mutators'
+import { MUTATOR_LEVEL_EVERY, getStageType } from '../utils/stages'
 
 type RunState =
   | { kind: 'idle' }
@@ -55,6 +61,7 @@ export default function GamePage() {
   const [gameStarted, setGameStarted] = useState(false)
   const [stageLevel, setStageLevel] = useState(1)
   const [levelPathSeed, setLevelPathSeed] = useState(1)
+  const [activeMutator, setActiveMutator] = useState<InputMutator | null>(null)
 
   const [roundEndsAt, setRoundEndsAt] = useState(() => Date.now() + ROUND_SECONDS * 1000)
   const [now, setNow] = useState(() => Date.now())
@@ -77,12 +84,28 @@ export default function GamePage() {
     })
   }, [gameStarted, secondsLeft, hasSolved])
 
+  function makeSortForStage(level: number, seed: number) {
+    const stageType = getStageType(level)
+    if (stageType !== 'mutator') {
+      setActiveMutator(null)
+      return pickSortForStage(level)
+    }
+
+    const mutator = pickMutatorForLevel(level, seed)
+    setActiveMutator(mutator)
+
+    const rng = mulberry32((seed ^ (level * 0x27d4eb2d)) >>> 0)
+    const base = SILLY_SORTS[Math.floor(rng() * SILLY_SORTS.length)] ?? getRandomSillySort()
+    return applyMutatorToSort(base, mutator)
+  }
+
   function handleStartGame() {
     setGameStarted(true)
     setStageLevel(1)
-    setSort(pickSortForStage(1))
     setRoundEndsAt(Date.now() + ROUND_SECONDS * 1000)
-    setLevelPathSeed(Math.floor(Math.random() * 2 ** 31))
+    const seed = Math.floor(Math.random() * 2 ** 31)
+    setLevelPathSeed(seed)
+    setSort(makeSortForStage(1, seed))
   }
 
   const activeArray = useMemo(() => {
@@ -212,10 +235,8 @@ export default function GamePage() {
         title: '❌ Rule violated',
         detail:
           forbidUnchangedForThisInput && unchanged
-            ? `This prompt requires output to NOT equal the input. Expected output: ${sort.expectedOutput(
-                input,
-              )} | Got unchanged input.`
-            : `Expected output: ${sort.expectedOutput(input)} | Got: [${result.output.join(', ')}]`,
+            ? `This prompt requires output to NOT equal the input. Expected output: ${expectedOutputForSort(sort, input)} | Got unchanged input.`
+            : `Expected output: ${expectedOutputForSort(sort, input)} | Got: [${result.output.join(', ')}]`,
       })
       return
     }
@@ -256,7 +277,7 @@ export default function GamePage() {
       setFeedback({
         kind: 'success',
         title: '✅ Success',
-        detail: `Expected output: ${sort.expectedOutput(input)}`,
+        detail: `Expected output: ${expectedOutputForSort(sort, input)}`,
       })
     } else {
       setHasSolved(false)
@@ -265,10 +286,11 @@ export default function GamePage() {
         title: '❌ Rule violated',
         detail:
           forbidUnchangedForThisInput && unchanged
-            ? `This prompt requires output to NOT equal the input. Expected output: ${sort.expectedOutput(
+            ? `This prompt requires output to NOT equal the input. Expected output: ${expectedOutputForSort(
+                sort,
                 input,
               )} | Got unchanged input.`
-            : `Expected output: ${sort.expectedOutput(input)} | Got: [${result.output.join(', ')}]`,
+            : `Expected output: ${expectedOutputForSort(sort, input)} | Got: [${result.output.join(', ')}]`,
       })
     }
   }
@@ -295,7 +317,7 @@ export default function GamePage() {
     const nextLevel = stageLevel + 1
     const next = generateNumbers(10)
     setStageLevel(nextLevel)
-    setSort(pickSortForStage(nextLevel))
+    setSort(makeSortForStage(nextLevel, levelPathSeed))
     setInput(next)
     initialInputRef.current = next
     setExampleInput(generateNumbers(10))
@@ -311,7 +333,7 @@ export default function GamePage() {
   /** Fresh puzzle + full timer after a failed round; does not advance the level meter. */
   function newRoundFromFailure() {
     const next = generateNumbers(10)
-    setSort(pickSortForStage(stageLevel))
+    setSort(makeSortForStage(stageLevel, levelPathSeed))
     setInput(next)
     initialInputRef.current = next
     setExampleInput(generateNumbers(10))
@@ -330,6 +352,7 @@ export default function GamePage() {
     (feedback?.kind === 'error' || runState.kind === 'error')
 
   const isBossLevel = gameStarted && isBossStageLevel(stageLevel, BOSS_LEVEL_EVERY)
+  const isMutatorLevel = gameStarted && getStageType(stageLevel) === 'mutator'
 
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden">
@@ -358,6 +381,17 @@ export default function GamePage() {
             aria-hidden
           />
         </>
+      ) : isMutatorLevel ? (
+        <>
+          <div
+            className="pointer-events-none fixed inset-0 z-[8] bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.32)_55%,rgba(6,95,70,0.45)_100%)]"
+            aria-hidden
+          />
+          <div
+            className="mutator-scanlines pointer-events-none fixed inset-0 z-[8] opacity-70 mix-blend-overlay"
+            aria-hidden
+          />
+        </>
       ) : null}
 
       <main
@@ -365,6 +399,8 @@ export default function GamePage() {
           'relative z-10 mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 flex-col gap-4 overflow-hidden px-3 pb-[10.5rem] pt-2 sm:gap-5 sm:px-5 sm:pb-40 sm:pt-3 lg:pb-36',
           isBossLevel
             ? 'boss-arena-glow rounded-none ring-2 ring-rose-500/50 ring-offset-2 ring-offset-zinc-950 lg:rounded-xl'
+            : isMutatorLevel
+              ? 'mutator-arena-glow rounded-none ring-2 ring-emerald-400/40 ring-offset-2 ring-offset-zinc-950 lg:rounded-xl'
             : '',
         ].join(' ')}
       >
@@ -518,6 +554,13 @@ export default function GamePage() {
                     <Skull className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
                     Boss level
                   </div>
+                ) : isMutatorLevel ? (
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-gradient-to-r from-emerald-500/90 to-teal-500/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-950 shadow-lg shadow-emerald-500/20">
+                    <span className="text-[12px]" aria-hidden>
+                      🧬
+                    </span>
+                    Mutator stage
+                  </div>
                 ) : (
                   <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-500/30 bg-zinc-950/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-200 backdrop-blur-sm">
                     <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
@@ -537,9 +580,26 @@ export default function GamePage() {
                   <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-zinc-800 dark:text-zinc-100 sm:text-[13px]">
                     <span className="text-fuchsia-600 dark:text-fuchsia-400">in</span> [{exampleInput.join(', ')}]
                     {'\n'}
-                    <span className="text-cyan-600 dark:text-cyan-400">out</span> {sort.expectedOutput(exampleInput)}
+                    {activeMutator ? (
+                      <>
+                        <span className="text-emerald-700 dark:text-emerald-300">mut</span> [
+                        {getEffectiveInput(sort, exampleInput).join(', ')}]
+                        {'\n'}
+                      </>
+                    ) : null}
+                    <span className="text-cyan-600 dark:text-cyan-400">out</span>{' '}
+                    {expectedOutputForSort(sort, exampleInput)}
                   </pre>
                 </div>
+                {activeMutator ? (
+                  <div className="mt-3 rounded-2xl border border-emerald-400/35 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-950 shadow-sm dark:text-emerald-100">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-900/70 dark:text-emerald-200/80">
+                      Mutator
+                    </div>
+                    <div className="mt-1 font-semibold">{activeMutator.name}</div>
+                    <div className="mt-1 text-xs opacity-90">{activeMutator.description}</div>
+                  </div>
+                ) : null}
                 {forbidUnchangedForThisInput ? (
                   <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-950 dark:text-amber-100">
                     Output must not equal the input for this round.
@@ -623,6 +683,7 @@ export default function GamePage() {
         <LevelProgressMeter
           currentLevel={stageLevel}
           bossEvery={BOSS_LEVEL_EVERY}
+          mutatorEvery={MUTATOR_LEVEL_EVERY}
           chunkSize={LEVEL_CHUNK_SIZE}
           seed={levelPathSeed}
         />
